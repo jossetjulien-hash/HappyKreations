@@ -39,10 +39,21 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { client, date_retrait, date_evenement, type_evenement, lignes, notes, origin } = body;
+    const {
+      client, date_retrait, date_evenement, type_evenement, lignes, notes,
+      allergies, message_gravure, couleur, origin,
+    } = body;
     if (!client?.nom || !date_retrait || !Array.isArray(lignes) || lignes.length === 0) {
       return json({ error: "payload_incomplet" }, { status: 400 });
     }
+    // Normalise les champs structurés (jamais faire confiance au client).
+    const allergiesClean = Array.isArray(allergies)
+      ? allergies.filter((a) => typeof a === "string").slice(0, 20)
+      : [];
+    const gravureClean = typeof message_gravure === "string"
+      ? message_gravure.slice(0, 200) : null;
+    const couleurClean = typeof couleur === "string"
+      ? couleur.slice(0, 80) : null;
 
     // 1. Valider la disponibilité de la date
     const [{ data: capJour }, { data: configRows }] = await Promise.all([
@@ -120,6 +131,9 @@ Deno.serve(async (req) => {
       total,
       acompte,
       notes: notes ?? null,
+      allergies: allergiesClean,
+      message_gravure: gravureClean,
+      couleur: couleurClean,
     }).select("id").single();
     if (cmdErr) throw cmdErr;
 

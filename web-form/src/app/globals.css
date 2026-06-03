@@ -1,11 +1,30 @@
 :root {
-  --bg: #fdfaf5;
-  --text: #2c1810;
-  --accent: #ce5a7c;
-  --muted: #7b6f63;
+  /* Charte graphique HappyKreations — Édition 2026 */
+  --cream: #fbf6ef;
+  --cream-deep: #f3eadc;
+  --rose: #e7b5b8;
+  --rose-deep: #c98388;
+  --sage: #a9bca1;
+  --sage-deep: #7e947a;
+  --peach: #f4d2b0;
+  --lavender: #cfc4e0;
+  --ink: #4f4a45;
+  --ink-soft: rgba(79, 74, 69, 0.62);
+  --hair: rgba(126, 148, 122, 0.28);
+  --shadow: 0 22px 50px -28px rgba(126, 148, 122, 0.45);
+
+  /* alias fonctionnels */
+  --bg: var(--cream);
+  --text: var(--ink);
+  --accent: var(--rose-deep);
+  --muted: var(--ink-soft);
   --card: #ffffff;
-  --border: #e5dccc;
-  --error: #c0392b;
+  --border: var(--hair);
+  --error: #b4544b;
+
+  --font-title: var(--font-fraunces), Georgia, serif;
+  --font-script: var(--font-caveat), cursive;
+  --font-body: var(--font-nunito), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -13,86 +32,168 @@
 html, body {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--bg);
-  color: var(--text);
+  font-family: var(--font-body);
+  background: var(--cream);
+  color: var(--ink);
+  line-height: 1.7;
   -webkit-font-smoothing: antialiased;
 }
 
-.container {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 32px 20px 80px;
+/* Lavis chaud + grain papier, comme la charte */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(1200px 600px at 12% -5%, rgba(231, 181, 184, 0.18), transparent 60%),
+    radial-gradient(1000px 700px at 100% 8%, rgba(169, 188, 161, 0.16), transparent 55%),
+    radial-gradient(900px 800px at 50% 120%, rgba(207, 196, 224, 0.14), transparent 60%);
 }
 
-h1 { font-size: 28px; margin: 8px 0 4px; }
-h2 { font-size: 20px; margin: 24px 0 12px; }
-p { line-height: 1.5; }
+.container {
+  position: relative;
+  z-index: 1;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
+}
+
+/* ---------- En-tête de marque ---------- */
+.brand {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.brand .sprig { width: 56px; margin-bottom: 4px; }
+.logotype {
+  font-family: var(--font-title);
+  font-weight: 300;
+  font-size: clamp(2.4rem, 9vw, 3.4rem);
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  color: var(--ink);
+}
+.logotype b { font-weight: 500; font-style: italic; color: var(--rose-deep); }
+.brand .tagline {
+  margin-top: 14px;
+  font-size: 0.72rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.brand .lede {
+  margin-top: 10px;
+  font-family: var(--font-script);
+  font-size: 1.5rem;
+  color: var(--sage-deep);
+  line-height: 1.1;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-title);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+h2 {
+  font-size: 1.45rem;
+  margin: 0 0 16px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+h2 .step {
+  font-family: var(--font-script);
+  font-size: 1.6rem;
+  color: var(--rose-deep);
+  line-height: 1;
+}
+p { line-height: 1.7; }
 .muted { color: var(--muted); }
 
 .card {
+  position: relative;
   background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 16px;
+  border: 1px solid var(--hair);
+  border-radius: 22px;
+  padding: 26px 24px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow);
 }
 
 label {
   display: block;
   font-weight: 600;
-  margin: 12px 0 4px;
-  font-size: 14px;
+  margin: 16px 0 6px;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  color: var(--ink);
 }
 
 input, select, textarea {
   width: 100%;
   font: inherit;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: white;
+  padding: 11px 14px;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  background: var(--cream);
   color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px rgba(169, 188, 161, 0.22);
+}
 textarea { min-height: 80px; resize: vertical; }
 
 button {
   font: inherit;
-  font-weight: 600;
-  padding: 12px 18px;
+  font-weight: 700;
+  padding: 13px 22px;
   border: 0;
   border-radius: 999px;
-  background: var(--accent);
-  color: white;
+  background: var(--rose-deep);
+  color: #fff;
   cursor: pointer;
+  transition: filter 0.15s, transform 0.05s;
 }
-button:disabled { background: #c9b9a8; cursor: not-allowed; }
+button:hover { filter: brightness(1.05); }
+button:active { transform: translateY(1px); }
+button:disabled { background: #cdbfb0; cursor: not-allowed; filter: none; }
 button.secondary {
   background: transparent;
-  color: var(--accent);
-  border: 1px solid var(--accent);
+  color: var(--rose-deep);
+  border: 1px solid var(--rose-deep);
 }
 
+/* ---------- Produits ---------- */
 .produit-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 14px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+  border-bottom: 1px solid var(--hair);
 }
 .produit-card:last-child { border-bottom: 0; }
 .produit-infos { flex: 1; min-width: 0; }
+.produit-infos strong {
+  font-family: var(--font-title);
+  font-weight: 500;
+  font-size: 1.1rem;
+}
 
 .produit-photo {
-  width: 72px;
-  height: 72px;
+  width: 76px;
+  height: 76px;
   object-fit: cover;
-  border-radius: 10px;
-  border: 1px solid var(--border);
+  border-radius: 14px;
+  border: 1px solid var(--hair);
   flex-shrink: 0;
-  background: #f5ece0;
+  background: var(--cream-deep);
 }
 .produit-photo.placeholder {
   display: flex;
@@ -103,28 +204,64 @@ button.secondary {
 
 .qte-control { display: flex; align-items: center; gap: 8px; }
 .qte-control button {
-  width: 32px; height: 32px; padding: 0; border-radius: 50%;
+  width: 34px; height: 34px; padding: 0;
+  border-radius: 50%;
   font-size: 18px;
+  background: var(--sage);
+}
+.qte-control button:disabled { background: #d8d2c6; }
+
+/* ---------- Chips (allergies) ---------- */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.chip {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--ink);
+  border: 1px solid var(--hair);
+}
+.chip:hover { filter: none; background: var(--cream-deep); }
+.chip.on {
+  background: var(--sage);
+  color: #fff;
+  border-color: var(--sage-deep);
 }
 
+/* ---------- Dates ---------- */
 .dates-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+  gap: 8px;
 }
 .date-cell {
   text-align: center;
-  padding: 8px 4px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  padding: 9px 4px;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
   cursor: pointer;
-  background: white;
+  background: var(--cream);
+  color: var(--ink);
+  font-weight: 700;
 }
-.date-cell.selected { background: var(--accent); color: white; border-color: var(--accent); }
+.date-cell:hover { filter: none; background: var(--cream-deep); }
+.date-cell.selected {
+  background: var(--rose);
+  color: #fff;
+  border-color: var(--rose-deep);
+}
 .date-cell.disabled { opacity: 0.35; cursor: not-allowed; }
-.date-cell .day { font-weight: 700; font-size: 16px; }
-.date-cell .month { font-size: 11px; color: var(--muted); }
-.date-cell.selected .month { color: white; }
+.date-cell .day { font-family: var(--font-title); font-weight: 500; font-size: 16px; }
+.date-cell .month { font-size: 11px; color: var(--ink-soft); font-weight: 600; }
+.date-cell.selected .month { color: rgba(255, 255, 255, 0.85); }
 
-.error { color: var(--error); font-size: 14px; }
-.summary { background: #fff5e6; border: 1px solid #f0c270; }
+.error { color: var(--error); font-size: 0.9rem; }
+
+.summary {
+  background: var(--cream-deep);
+  border: 1px solid var(--peach);
+}
+.summary h2 .step { color: var(--sage-deep); }
+
+footer-note { display: none; }

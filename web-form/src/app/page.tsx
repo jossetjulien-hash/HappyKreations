@@ -7,6 +7,8 @@ import type { Produit, CapaciteJour, ConfigItem, LigneCommande, ClientInfo } fro
 const SUPABASE_FN_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/creer-paiement`;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
+const ALLERGENES = ["Gluten", "Lait", "Œuf", "Fruits à coque", "Arachide", "Soja", "Sésame"];
+
 export default function Page() {
   const [produits, setProduits] = useState<Produit[]>([]);
   const [capacites, setCapacites] = useState<CapaciteJour[]>([]);
@@ -16,6 +18,9 @@ export default function Page() {
   const [typeEvenement, setTypeEvenement] = useState("");
   const [dateEvenement, setDateEvenement] = useState<string>("");
   const [notes, setNotes] = useState("");
+  const [allergies, setAllergies] = useState<string[]>([]);
+  const [messageGravure, setMessageGravure] = useState("");
+  const [couleur, setCouleur] = useState("");
   const [client, setClient] = useState<ClientInfo>({ nom: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +103,9 @@ export default function Page() {
           type_evenement: typeEvenement || null,
           lignes,
           notes,
+          allergies,
+          message_gravure: messageGravure || null,
+          couleur: couleur || null,
           origin: window.location.origin,
         }),
       });
@@ -116,11 +124,24 @@ export default function Page() {
 
   return (
     <div className="container">
-      <h1>{config["nom_atelier"] ?? "HappyKreations"}</h1>
-      <p className="muted">Coffrets de chocolats & cornets de meringues pour vos événements</p>
+      <header className="brand">
+        <svg className="sprig" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+          <path d="M40 70 C40 50 40 28 40 12" stroke="#7E947A" strokeWidth="1.6" strokeLinecap="round" />
+          <g fill="#A9BCA1">
+            <ellipse cx="28" cy="50" rx="9" ry="5" transform="rotate(-34 28 50)" />
+            <ellipse cx="52" cy="44" rx="9" ry="5" transform="rotate(34 52 44)" />
+            <ellipse cx="30" cy="34" rx="8" ry="4.5" transform="rotate(-30 30 34)" />
+            <ellipse cx="50" cy="28" rx="8" ry="4.5" transform="rotate(30 50 28)" />
+          </g>
+          <ellipse cx="40" cy="14" rx="6" ry="7" fill="#E7B5B8" />
+        </svg>
+        <div className="logotype">happy<b>kreations</b></div>
+        <div className="tagline">créations faites main</div>
+        <div className="lede">Composez votre commande pour votre événement</div>
+      </header>
 
       <section className="card">
-        <h2>1. Vos produits</h2>
+        <h2><span className="step">1.</span> Vos produits</h2>
         {produits.length === 0 && <p className="muted">Catalogue en cours de chargement…</p>}
         {produits.map((p) => {
           const q = quantites[p.id]?.qte ?? 0;
@@ -159,7 +180,7 @@ export default function Page() {
       </section>
 
       <section className="card">
-        <h2>2. Date de retrait</h2>
+        <h2><span className="step">2.</span> Date de retrait</h2>
         <p className="muted">
           Minimum {delaiMini} jours avant la date de l’événement.
         </p>
@@ -180,17 +201,43 @@ export default function Page() {
       </section>
 
       <section className="card">
-        <h2>3. Votre événement</h2>
+        <h2><span className="step">3.</span> Votre événement</h2>
         <label>Type d’événement</label>
         <input value={typeEvenement} onChange={(e) => setTypeEvenement(e.target.value)} placeholder="Mariage, baptême, communion…" />
         <label>Date de l’événement (si différente du retrait)</label>
         <input type="date" value={dateEvenement} onChange={(e) => setDateEvenement(e.target.value)} />
+
+        <label>Allergies à signaler</label>
+        <div className="chips">
+          {ALLERGENES.map((a) => {
+            const on = allergies.includes(a);
+            return (
+              <button
+                key={a}
+                type="button"
+                className={`chip ${on ? "on" : ""}`}
+                onClick={() =>
+                  setAllergies((cur) => (on ? cur.filter((x) => x !== a) : [...cur, a]))
+                }
+              >
+                {on ? "✓ " : ""}{a}
+              </button>
+            );
+          })}
+        </div>
+
+        <label>Message à graver (facultatif)</label>
+        <input value={messageGravure} onChange={(e) => setMessageGravure(e.target.value)} placeholder="Camille & Léa, 14·06·2026…" />
+
+        <label>Couleur souhaitée (facultatif)</label>
+        <input value={couleur} onChange={(e) => setCouleur(e.target.value)} placeholder="Rose poudré, sauge, thème champêtre…" />
+
         <label>Notes</label>
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Préférences, allergies, message à graver…" />
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Toute autre préférence…" />
       </section>
 
       <section className="card">
-        <h2>4. Vos coordonnées</h2>
+        <h2><span className="step">4.</span> Vos coordonnées</h2>
         <label>Nom complet *</label>
         <input value={client.nom} onChange={(e) => setClient({ ...client, nom: e.target.value })} />
         <label>Email</label>
@@ -200,7 +247,7 @@ export default function Page() {
       </section>
 
       <section className="card summary">
-        <h2>Récapitulatif</h2>
+        <h2><span className="step">✿</span> Récapitulatif</h2>
         <p>Total : <strong>{total.toFixed(2)} €</strong></p>
         <p>Acompte à régler maintenant ({acomptePourcent} %) : <strong>{acompte.toFixed(2)} €</strong></p>
         <p className="muted">Le solde sera réglé au retrait.</p>

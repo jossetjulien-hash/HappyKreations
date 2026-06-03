@@ -19,9 +19,15 @@ struct CommandeEditView: View {
         self.isNew = isNew
     }
 
+    /// Allergènes courants pour les chocolats & meringues (cases à cocher).
+    private static let allergenesCourants = [
+        "Gluten", "Lait", "Œuf", "Fruits à coque", "Arachide", "Soja", "Sésame",
+    ]
+
     var body: some View {
         Form {
             sectionInfos
+            sectionPersonnalisation
             sectionLignes
             sectionTotaux
             sectionPaiements
@@ -65,7 +71,24 @@ struct CommandeEditView: View {
             Picker("Canal", selection: $draft.canal) {
                 ForEach(CanalCommande.allCases) { Text($0.libelle).tag($0) }
             }
-            TextField("Notes", text: optional($draft.notes), axis: .vertical)
+        }
+    }
+
+    private var sectionPersonnalisation: some View {
+        Section("Personnalisation") {
+            DisclosureGroup("Allergies\(draft.allergies.isEmpty ? "" : " (\(draft.allergies.count))")") {
+                ForEach(Self.allergenesCourants, id: \.self) { a in
+                    Toggle(a, isOn: Binding(
+                        get: { draft.allergies.contains(a) },
+                        set: { on in
+                            if on { if !draft.allergies.contains(a) { draft.allergies.append(a) } }
+                            else { draft.allergies.removeAll { $0 == a } }
+                        }))
+                }
+            }
+            TextField("Message à graver", text: optional($draft.message_gravure))
+            TextField("Couleur souhaitée", text: optional($draft.couleur))
+            TextField("Notes libres", text: optional($draft.notes), axis: .vertical)
                 .lineLimit(2...6)
         }
     }
