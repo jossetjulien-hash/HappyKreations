@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Supabase
+import EventKit
 
 /// Cache central + abonnements Realtime aux tables principales.
 @MainActor
@@ -19,8 +20,24 @@ final class AppStore: ObservableObject {
     @Published var lastError: String?
     @Published var isLoading = false
 
+    // MARK: - Sync Calendrier Apple (EventKit)
+
+    @Published var calendarSyncEnabled: Bool {
+        didSet { UserDefaults.standard.set(calendarSyncEnabled, forKey: Self.calSyncEnabledKey) }
+    }
+    @Published var calendarSyncId: String? {
+        didSet { UserDefaults.standard.set(calendarSyncId, forKey: Self.calSyncIdKey) }
+    }
+    private static let calSyncEnabledKey = "happykreations.calendarSyncEnabled"
+    private static let calSyncIdKey = "happykreations.calendarSyncId"
+
     let repo = Repository()
     private var realtimeTasks: [Task<Void, Never>] = []
+
+    init() {
+        self.calendarSyncEnabled = UserDefaults.standard.bool(forKey: Self.calSyncEnabledKey)
+        self.calendarSyncId = UserDefaults.standard.string(forKey: Self.calSyncIdKey)
+    }
 
     // MARK: - Chargement
 
@@ -59,6 +76,7 @@ final class AppStore: ObservableObject {
         do {
             commandes = try await repo.selectAll(Commande.self, from: "commande",
                                                  orderBy: "date_retrait", ascending: true)
+            await syncCommandesToCalendar()
         } catch { lastError = "commande: \(error.localizedDescription)" }
     }
 
@@ -142,5 +160,36 @@ final class AppStore: ObservableObject {
 
     var acomptePourcent: Double {
         Double(config["acompte_pourcent"] ?? "30") ?? 30
+    }
+
+    // MARK: - Sync vers Calendrier Apple
+
+    func enableCalendarSync(calendarId: String) async {
+        let ok = await CalendarService.shared.requestAccess()
+        guard ok else {
+            lastError = "Accès Calendrier refusé."
+            return
+        }
+        calendarSyncId = calendarId
+        calendarSyncEnabled = true
+        await syncCommandesToCalendar()
+    }
+
+    func disableCalendarSync() {
+        calendarSyncEnabled = false
+        calendarSyncId = nil
+    }
+
+    /// Pousse l'état actuel des commandes dans le Calendrier sélectionné.
+    func syncCommandesToCalendar() async {
+        guard calendarSyncEnabled,
+              CalendarService.shared.hasAccess,
+              let cid = calendarSyncId,
+              let cal = CalendarService.shared.calendar(id: cid)
+        else { return }
+        for cmd in commandes {
+            let nom = client(id: cmd.client_id)?.nom
+            try? CalendarService.shared.sync(commande: cmd, clientNom: nom, calendar: cal)
+        }
     }
 }

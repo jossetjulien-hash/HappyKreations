@@ -12,9 +12,12 @@
 		0C70434A826B96C14C533430 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = A8DCC79D232E12C8BA005233 /* Supabase */; };
 		209C8CFAEC841F46B3B6493C /* CommandeEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F02750D0260F4A1482DEEF6 /* CommandeEditView.swift */; };
 		2F81F8C139881A9B85503308 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EBB4ABC2F721B2377FD5C69 /* AppStore.swift */; };
+		33821CD15EED53E805630ED0 /* CalendarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5C33FA51C77B1DE71E6D66C /* CalendarService.swift */; };
+		3CE6011FAA514B210D446CF2 /* BiometricService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 277507332F7826021C133D88 /* BiometricService.swift */; };
 		42539E82DB8087714722A1A8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2F2A31384C49A677FD0EBD2C /* Assets.xcassets */; };
 		49079B8AC58C715F68FC8C32 /* ClientsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A0128D75D5D5373D2D8B8B4 /* ClientsListView.swift */; };
 		557BC1D80517DD90DEA93EEE /* Repository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DB70417CCE1A666A58FF541 /* Repository.swift */; };
+		6A363A314757E21E1D5D48FF /* LockScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 184429922CCB1E1B76B455D2 /* LockScreenView.swift */; };
 		A141A13EF97DC90C33DC3822 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04BB15616792EB3ADEE5C736 /* SupabaseService.swift */; };
 		A74F839296DDD08142AB0B0F /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D43AB7701F14AE3207F80B /* Models.swift */; };
 		AC473D84941B0D677B685338 /* AgendaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D135797A3CC01B685026812 /* AgendaView.swift */; };
@@ -25,6 +28,7 @@
 		D51EDFEF9F517580CC7245DD /* MatieresListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE85EB0F9E7A8E7E2715C47A /* MatieresListView.swift */; };
 		DAD7AFF636C108417A1EE3A4 /* HappyKreationsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8EA130EA34A109C11E12DEF /* HappyKreationsApp.swift */; };
 		DDB6732D983D6C831E04AD40 /* AuthStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A98AB59FF71947A8B472576 /* AuthStore.swift */; };
+		EBFD58158CE67F9721129228 /* PipelineKanbanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34CE00E2101F9E4A3A19EDE0 /* PipelineKanbanView.swift */; };
 		F9F0335076E001B48223BC07 /* FournisseursListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60CB7D54C5D766DE4B5A1028 /* FournisseursListView.swift */; };
 		FC207EF9A3D780E64F33718D /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A3BAA2C007882773367E75E /* DashboardView.swift */; };
 		FD1B0055D9EFB64D6C86DB2E /* RecettesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFCBED9577C085A5FCECCC4D /* RecettesListView.swift */; };
@@ -33,9 +37,12 @@
 /* Begin PBXFileReference section */
 		017697D0BC8F928DF0FBE6E3 /* HappyKreations.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HappyKreations.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		04BB15616792EB3ADEE5C736 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
+		184429922CCB1E1B76B455D2 /* LockScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreenView.swift; sourceTree = "<group>"; };
 		1A3BAA2C007882773367E75E /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		277507332F7826021C133D88 /* BiometricService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricService.swift; sourceTree = "<group>"; };
 		2F2A31384C49A677FD0EBD2C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		30526DEE07AC523D9D42EAFB /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		34CE00E2101F9E4A3A19EDE0 /* PipelineKanbanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineKanbanView.swift; sourceTree = "<group>"; };
 		3A98AB59FF71947A8B472576 /* AuthStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthStore.swift; sourceTree = "<group>"; };
 		48A227D9205224B1A9E8F8FE /* Config.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Config.swift; sourceTree = "<group>"; };
 		4A0128D75D5D5373D2D8B8B4 /* ClientsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientsListView.swift; sourceTree = "<group>"; };
@@ -46,6 +53,7 @@
 		7FC9BC8484CD9060F325A7B1 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		9D135797A3CC01B685026812 /* AgendaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgendaView.swift; sourceTree = "<group>"; };
 		9DB70417CCE1A666A58FF541 /* Repository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Repository.swift; sourceTree = "<group>"; };
+		A5C33FA51C77B1DE71E6D66C /* CalendarService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarService.swift; sourceTree = "<group>"; };
 		A79880E6B23822EF7A9BB5AB /* Enums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
 		AE85EB0F9E7A8E7E2715C47A /* MatieresListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatieresListView.swift; sourceTree = "<group>"; };
 		BB888AE761211ED9A20B0EDF /* ReglagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReglagesView.swift; sourceTree = "<group>"; };
@@ -157,6 +165,7 @@
 			isa = PBXGroup;
 			children = (
 				9D135797A3CC01B685026812 /* AgendaView.swift */,
+				34CE00E2101F9E4A3A19EDE0 /* PipelineKanbanView.swift */,
 			);
 			path = Agenda;
 			sourceTree = "<group>";
@@ -182,6 +191,8 @@
 		E18C722444D8C1FB3F402F41 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				277507332F7826021C133D88 /* BiometricService.swift */,
+				A5C33FA51C77B1DE71E6D66C /* CalendarService.swift */,
 				9DB70417CCE1A666A58FF541 /* Repository.swift */,
 				04BB15616792EB3ADEE5C736 /* SupabaseService.swift */,
 			);
@@ -192,6 +203,7 @@
 			isa = PBXGroup;
 			children = (
 				1A3BAA2C007882773367E75E /* DashboardView.swift */,
+				184429922CCB1E1B76B455D2 /* LockScreenView.swift */,
 				30526DEE07AC523D9D42EAFB /* LoginView.swift */,
 				7FC9BC8484CD9060F325A7B1 /* RootView.swift */,
 				A66417EEB1327614954C6448 /* Agenda */,
@@ -291,6 +303,8 @@
 				AC473D84941B0D677B685338 /* AgendaView.swift in Sources */,
 				2F81F8C139881A9B85503308 /* AppStore.swift in Sources */,
 				DDB6732D983D6C831E04AD40 /* AuthStore.swift in Sources */,
+				3CE6011FAA514B210D446CF2 /* BiometricService.swift in Sources */,
+				33821CD15EED53E805630ED0 /* CalendarService.swift in Sources */,
 				49079B8AC58C715F68FC8C32 /* ClientsListView.swift in Sources */,
 				209C8CFAEC841F46B3B6493C /* CommandeEditView.swift in Sources */,
 				070F0015E9C2D0E0105D7C63 /* CommandesListView.swift in Sources */,
@@ -299,9 +313,11 @@
 				BB634D6A703DC26AFE9A2DAF /* Enums.swift in Sources */,
 				F9F0335076E001B48223BC07 /* FournisseursListView.swift in Sources */,
 				DAD7AFF636C108417A1EE3A4 /* HappyKreationsApp.swift in Sources */,
+				6A363A314757E21E1D5D48FF /* LockScreenView.swift in Sources */,
 				C5D00C9AFF2534C0EB045F74 /* LoginView.swift in Sources */,
 				D51EDFEF9F517580CC7245DD /* MatieresListView.swift in Sources */,
 				A74F839296DDD08142AB0B0F /* Models.swift in Sources */,
+				EBFD58158CE67F9721129228 /* PipelineKanbanView.swift in Sources */,
 				FD1B0055D9EFB64D6C86DB2E /* RecettesListView.swift in Sources */,
 				BAD5831010DF66EBD3534B15 /* ReglagesView.swift in Sources */,
 				557BC1D80517DD90DEA93EEE /* Repository.swift in Sources */,

@@ -34,19 +34,26 @@ enum AppSection: String, CaseIterable, Identifiable {
 struct RootView: View {
     @EnvironmentObject var auth: AuthStore
     @EnvironmentObject var store: AppStore
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selection: AppSection = .dashboard
 
     var body: some View {
         Group {
-            if auth.isAuthenticated {
+            if !auth.isAuthenticated {
+                LoginView()
+            } else if auth.requiresBiometric {
+                LockScreenView()
+            } else {
                 mainView
                     .task {
                         await store.loadAll()
                         store.startRealtime()
                     }
-            } else {
-                LoginView()
             }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // Verrouille quand l'app passe en background (revient verrouillée).
+            if phase == .background { auth.lock() }
         }
     }
 

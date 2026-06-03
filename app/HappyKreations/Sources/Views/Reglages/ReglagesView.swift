@@ -1,4 +1,5 @@
 import SwiftUI
+import EventKit
 #if os(macOS)
 import AppKit
 #else
@@ -16,6 +17,8 @@ struct ReglagesView: View {
     @State private var dateCapacite = Date()
     @State private var plafond: Int = 10
     @State private var bloque = false
+    @State private var calendarChoices: [EKCalendar] = []
+    @State private var selectedCalendarId: String = ""
 
     var body: some View {
         Form {
@@ -24,6 +27,57 @@ struct ReglagesView: View {
                 Button("Se déconnecter", role: .destructive) {
                     Task { await auth.signOut() }
                 }
+            }
+
+            if auth.biometricKind != .none {
+                Section {
+                    Toggle(isOn: Binding(
+                        get: { auth.biometricEnabled },
+                        set: { wanted in
+                            Task { await auth.setBiometric(enabled: wanted) }
+                        }
+                    )) {
+                        Label("Verrouiller avec \(auth.biometricKind.libelle)",
+                              systemImage: auth.biometricKind.icon)
+                    }
+                } footer: {
+                    Text("L'app demandera \(auth.biometricKind.libelle) au démarrage et après chaque mise en arrière-plan.")
+                }
+            }
+
+            Section {
+                if !store.calendarSyncEnabled {
+                    if !calendarChoices.isEmpty {
+                        Picker("Calendrier", selection: $selectedCalendarId) {
+                            ForEach(calendarChoices, id: \.calendarIdentifier) { c in
+                                Text(c.title).tag(c.calendarIdentifier)
+                            }
+                        }
+                    }
+                    Button {
+                        Task { await activerSync() }
+                    } label: {
+                        Label("Activer la synchro Calendrier", systemImage: "calendar.badge.plus")
+                    }
+                } else {
+                    LabeledContent("Calendrier",
+                                   value: calendarChoices.first { $0.calendarIdentifier == store.calendarSyncId }?.title
+                                          ?? "—")
+                    Button {
+                        Task { await store.syncCommandesToCalendar() }
+                    } label: {
+                        Label("Synchroniser maintenant", systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    Button(role: .destructive) {
+                        store.disableCalendarSync()
+                    } label: {
+                        Label("Désactiver la synchro", systemImage: "calendar.badge.minus")
+                    }
+                }
+            } header: {
+                Text("Calendrier Apple")
+            } footer: {
+                Text("Les commandes apparaîtront comme événements toute la journée à la date de retrait. Via iCloud, elles seront visibles sur tous tes appareils Apple sans configuration supplémentaire.")
             }
 
             Section("Paramètres globaux") {
@@ -82,7 +136,10 @@ struct ReglagesView: View {
         }
         .formStyle(.grouped)
         .navigationTitle("Réglages")
-        .task { restaurer() }
+        .task {
+            restaurer()
+            await chargerCalendriers()
+        }
         .onChange(of: store.config) { _, _ in restaurer() }
         .alert("Erreur", isPresented: .init(get: { errorText != nil }, set: { _ in errorText = nil })) {
             Button("OK", role: .cancel) {}
@@ -93,6 +150,26 @@ struct ReglagesView: View {
         acomptePourcent = store.config["acompte_pourcent"] ?? "30"
         delaiMini = store.config["delai_mini_jours"] ?? "7"
         nomAtelier = store.config["nom_atelier"] ?? "HappyKreations"
+    }
+
+    private func chargerCalendriers() async {
+        // Lecture des calendriers : nécessite l'autorisation. On ne demande
+        // pas l'accès tant que l'utilisateur n'a pas activé la synchro, sauf
+        // si on doit afficher la liste pour qu'il choisisse.
+        if !CalendarService.shared.hasAccess {
+            _ = await CalendarService.shared.requestAccess()
+        }
+        calendarChoices = CalendarService.shared.writableCalendars
+        if selectedCalendarId.isEmpty {
+            selectedCalendarId = store.calendarSyncId
+                ?? CalendarService.shared.defaultCalendar?.calendarIdentifier
+                ?? calendarChoices.first?.calendarIdentifier ?? ""
+        }
+    }
+
+    private func activerSync() async {
+        guard !selectedCalendarId.isEmpty else { return }
+        await store.enableCalendarSync(calendarId: selectedCalendarId)
     }
 
     private func sauverConfig() async {

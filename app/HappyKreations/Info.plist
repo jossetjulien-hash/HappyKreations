@@ -22,6 +22,12 @@
 	<string>1</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>HappyKreations ajoute les retraits de commandes dans votre Calendrier Apple pour que vous les voyiez sur tous vos appareils.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>HappyKreations ajoute les retraits de commandes dans votre Calendrier Apple pour que vous les voyiez sur tous vos appareils.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Face ID est utilisé pour déverrouiller l'application HappyKreations rapidement.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

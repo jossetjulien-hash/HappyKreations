@@ -84,23 +84,8 @@ struct AgendaView: View {
     }
 
     private var chargeSemaine: some View {
-        let semaine = joursSemaine(de: dateSelection)
-        return VStack(alignment: .leading, spacing: 8) {
-            Text("Charge de la semaine").font(.headline).padding(.top, 16)
-            ForEach(semaine, id: \.self) { d in
-                HStack {
-                    Text(d.formatted(.dateTime.weekday(.abbreviated).day()))
-                        .frame(width: 80, alignment: .leading)
-                    let unites = nbUnites(d)
-                    let pl = plafond(d) ?? max(unites, 1)
-                    ProgressView(value: Double(unites), total: Double(max(pl, 1)))
-                        .tint(unites >= pl ? .red : .blue)
-                    Text("\(unites)\(plafond(d).map { "/\($0)" } ?? "")")
-                        .font(.caption).foregroundStyle(.secondary)
-                        .frame(width: 50, alignment: .trailing)
-                }
-            }
-        }
+        PipelineKanbanView()
+            .padding(.top, 16)
     }
 
     // MARK: - Helpers
@@ -129,14 +114,6 @@ struct AgendaView: View {
             days.append(cal.date(byAdding: .day, value: 1, to: days.last!)!)
         }
         return days
-    }
-
-    private func joursSemaine(de date: Date) -> [Date] {
-        var cal = Calendar(identifier: .iso8601)
-        cal.firstWeekday = 2
-        let weekday = (cal.component(.weekday, from: date) + 5) % 7
-        let lundi = cal.date(byAdding: .day, value: -weekday, to: date)!
-        return (0..<7).compactMap { cal.date(byAdding: .day, value: $0, to: lundi) }
     }
 
     private func commandes(date: Date) -> [Commande] {
