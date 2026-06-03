@@ -6,6 +6,7 @@ export interface Produit {
   declinaisons: string[];
   visible_formulaire: boolean;
   actif: boolean;
+  photo_url: string | null;
 }
 
 export interface CapaciteJour {

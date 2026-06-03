@@ -35,24 +35,28 @@ struct Produit: Codable, Identifiable, Hashable {
     var declinaisons: [String]
     var visible_formulaire: Bool
     var actif: Bool
+    var photo_url: String?
     var created_at: Date?
 
     static func new() -> Produit {
         Produit(id: UUID(), nom: "", categorie: .coffret, prix_vente: 0,
-                declinaisons: [], visible_formulaire: false, actif: true)
+                declinaisons: [], visible_formulaire: false, actif: true,
+                photo_url: nil)
     }
 
     init(id: UUID, nom: String, categorie: CategorieProduit, prix_vente: Double,
          declinaisons: [String], visible_formulaire: Bool, actif: Bool,
-         created_at: Date? = nil) {
+         photo_url: String? = nil, created_at: Date? = nil) {
         self.id = id; self.nom = nom; self.categorie = categorie
         self.prix_vente = prix_vente; self.declinaisons = declinaisons
         self.visible_formulaire = visible_formulaire; self.actif = actif
+        self.photo_url = photo_url
         self.created_at = created_at
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, nom, categorie, prix_vente, declinaisons, visible_formulaire, actif, created_at
+        case id, nom, categorie, prix_vente, declinaisons, visible_formulaire,
+             actif, photo_url, created_at
     }
 
     init(from decoder: Decoder) throws {
@@ -64,6 +68,7 @@ struct Produit: Codable, Identifiable, Hashable {
         declinaisons = try c.decodeIfPresent([String].self, forKey: .declinaisons) ?? []
         visible_formulaire = try c.decode(Bool.self, forKey: .visible_formulaire)
         actif = try c.decode(Bool.self, forKey: .actif)
+        photo_url = try c.decodeIfPresent(String.self, forKey: .photo_url)
         created_at = try c.decodeIfPresent(Date.self, forKey: .created_at)
     }
 }

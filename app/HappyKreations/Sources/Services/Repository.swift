@@ -87,4 +87,30 @@ struct Repository {
             .upsert(["cle": cle, "valeur": valeur], onConflict: "cle")
             .execute()
     }
+
+    // MARK: - Storage : photos produits
+
+    /// Upload une photo dans le bucket `produits` et retourne l'URL publique.
+    /// `data` doit être du JPEG/PNG. `ext` est l'extension sans le point (jpg, png, heic…).
+    func uploadPhotoProduit(produit id: UUID, data: Data, ext: String) async throws -> String {
+        let path = "\(id.uuidString.lowercased()).\(ext.lowercased())"
+        let bucket = client.storage.from("produits")
+        _ = try await bucket.upload(
+            path,
+            data: data,
+            options: FileOptions(contentType: contentType(forExt: ext), upsert: true)
+        )
+        let publicURL = try bucket.getPublicURL(path: path)
+        // Cache-bust pour que l'UI rafraîchisse l'image après remplacement.
+        return "\(publicURL.absoluteString)?v=\(Int(Date().timeIntervalSince1970))"
+    }
+
+    private func contentType(forExt ext: String) -> String {
+        switch ext.lowercased() {
+        case "png":  return "image/png"
+        case "heic": return "image/heic"
+        case "webp": return "image/webp"
+        default:     return "image/jpeg"
+        }
+    }
 }

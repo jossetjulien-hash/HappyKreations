@@ -126,7 +126,14 @@ export default function Page() {
           const q = quantites[p.id]?.qte ?? 0;
           return (
             <div key={p.id} className="produit-card">
-              <div>
+              {p.photo_url ? (
+                <img src={p.photo_url} alt={p.nom} className="produit-photo" />
+              ) : (
+                <div className="produit-photo placeholder" aria-hidden="true">
+                  {p.categorie === "coffret" ? "🍫" : "🌀"}
+                </div>
+              )}
+              <div className="produit-infos">
                 <strong>{p.nom}</strong>
                 <div className="muted">
                   {p.prix_vente.toFixed(2)} € · {p.categorie}

@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 struct RecettesListView: View {
     @EnvironmentObject var store: AppStore
@@ -9,8 +10,7 @@ struct RecettesListView: View {
             ForEach(store.produits) { p in
                 NavigationLink(destination: RecetteEditView(produitId: p.id)) {
                     HStack {
-                        Image(systemName: p.categorie == .coffret ? "shippingbox" : "cone")
-                            .foregroundStyle(.tint)
+                        ProduitThumb(url: p.photo_url, categorie: p.categorie)
                         VStack(alignment: .leading) {
                             Text(p.nom).font(.headline)
                             HStack(spacing: 6) {
@@ -53,6 +53,8 @@ struct RecetteEditView: View {
     @State private var lignes: [RecetteLigne] = []
     @State private var declinaisonNew = ""
     @State private var errorText: String?
+    @State private var photoItem: PhotosPickerItem?
+    @State private var photoUploading = false
 
     init(produitId: UUID, draft: Produit? = nil, isNew: Bool = false) {
         self.produitId = produitId
@@ -62,6 +64,32 @@ struct RecetteEditView: View {
 
     var body: some View {
         Form {
+            Section("Photo") {
+                HStack(spacing: 12) {
+                    ProduitThumb(url: draft.photo_url, categorie: draft.categorie, size: 80)
+                    VStack(alignment: .leading, spacing: 6) {
+                        PhotosPicker(selection: $photoItem, matching: .images, photoLibrary: .shared()) {
+                            Label(draft.photo_url == nil ? "Ajouter une photo" : "Remplacer",
+                                  systemImage: "photo.on.rectangle")
+                        }
+                        .disabled(photoUploading || isNew)
+                        if isNew {
+                            Text("Enregistrez d'abord le produit pour ajouter une photo.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        if photoUploading {
+                            ProgressView().controlSize(.small)
+                        }
+                        if draft.photo_url != nil && !photoUploading {
+                            Button(role: .destructive) {
+                                draft.photo_url = nil
+                                Task { await save(silent: true) }
+                            } label: { Label("Supprimer", systemImage: "trash") }
+                                .font(.caption)
+                        }
+                    }
+                }
+            }
             Section("Produit") {
                 TextField("Nom", text: $draft.nom)
                 Picker("Catégorie", selection: $draft.categorie) {
@@ -125,6 +153,10 @@ struct RecetteEditView: View {
         .formStyle(.grouped)
         .navigationTitle(isNew ? "Nouveau produit" : draft.nom)
         .task { await load() }
+        .onChange(of: photoItem) { _, item in
+            guard let item else { return }
+            Task { await uploadPhoto(item) }
+        }
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button(isNew ? "Créer" : "Enregistrer") { Task { await save() } }
@@ -148,7 +180,7 @@ struct RecetteEditView: View {
         }
     }
 
-    private func save() async {
+    private func save(silent: Bool = false) async {
         do {
             if isNew { _ = try await store.repo.insert("produit", draft) }
             else { _ = try await store.repo.update("produit", draft, id: draft.id) }
@@ -160,7 +192,71 @@ struct RecetteEditView: View {
                 for l in lignes { _ = try await store.repo.upsert("recette_ligne", l) }
             }
             await store.loadProduits()
-            if isNew { dismiss() }
+            if isNew && !silent { dismiss() }
         } catch { errorText = error.localizedDescription }
+    }
+
+    private func uploadPhoto(_ item: PhotosPickerItem) async {
+        photoUploading = true
+        defer { photoUploading = false; photoItem = nil }
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else { return }
+            // Compresse en JPEG si possible pour limiter la taille.
+            let (payload, ext) = compressedJPEG(data) ?? (data, "jpg")
+            let url = try await store.repo.uploadPhotoProduit(
+                produit: produitId, data: payload, ext: ext)
+            draft.photo_url = url
+            _ = try await store.repo.update("produit", draft, id: draft.id)
+            await store.loadProduits()
+        } catch { errorText = error.localizedDescription }
+    }
+
+    private func compressedJPEG(_ data: Data) -> (Data, String)? {
+        #if canImport(UIKit)
+        if let img = UIImage(data: data),
+           let jpeg = img.jpegData(compressionQuality: 0.8) {
+            return (jpeg, "jpg")
+        }
+        #endif
+        return nil
+    }
+}
+
+// MARK: - Vignette produit
+
+struct ProduitThumb: View {
+    let url: String?
+    let categorie: CategorieProduit
+    var size: CGFloat = 44
+
+    var body: some View {
+        Group {
+            if let s = url, let u = URL(string: s) {
+                AsyncImage(url: u) { phase in
+                    switch phase {
+                    case .success(let img):
+                        img.resizable().scaledToFill()
+                    default:
+                        placeholder
+                    }
+                }
+            } else {
+                placeholder
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(Color.secondary.opacity(0.15))
+        )
+    }
+
+    private var placeholder: some View {
+        ZStack {
+            Color.secondary.opacity(0.08)
+            Image(systemName: categorie == .coffret ? "shippingbox" : "cone")
+                .foregroundStyle(.tint)
+        }
     }
 }
