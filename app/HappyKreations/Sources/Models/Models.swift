@@ -327,10 +327,28 @@ struct Fournisseur: Codable, Identifiable, Hashable {
     var id: UUID
     var nom: String
     var contact: String?
+    var telephone: String?
+    var email: String?
+    var adresse: String?
     var notes: String?
 
     static func new() -> Fournisseur {
-        Fournisseur(id: UUID(), nom: "", contact: nil, notes: nil)
+        Fournisseur(id: UUID(), nom: "")
+    }
+
+    init(id: UUID, nom: String, contact: String? = nil,
+         telephone: String? = nil, email: String? = nil,
+         adresse: String? = nil, notes: String? = nil) {
+        self.id = id; self.nom = nom; self.contact = contact
+        self.telephone = telephone; self.email = email
+        self.adresse = adresse; self.notes = notes
+    }
+
+    /// Initiales pour l'avatar de la fiche contact (max 2 caractères).
+    var initiales: String {
+        let parts = nom.split(separator: " ").prefix(2)
+        let chars = parts.compactMap { $0.first }.map(String.init)
+        return chars.joined().uppercased()
     }
 }
 

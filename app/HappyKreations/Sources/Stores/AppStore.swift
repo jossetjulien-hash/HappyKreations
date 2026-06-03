@@ -48,11 +48,19 @@ final class AppStore: ObservableObject {
         async let p: () = loadProduits()
         async let m: () = loadMatieres()
         async let co: () = loadCommandes()
+        async let pa: () = loadPaiements()
         async let f: () = loadFournisseurs()
         async let b: () = loadBons()
         async let k: () = loadCapacites()
         async let cf: () = loadConfig()
-        _ = await (c, p, m, co, f, b, k, cf)
+        _ = await (c, p, m, co, pa, f, b, k, cf)
+    }
+
+    func loadPaiements() async {
+        do {
+            paiements = try await repo.selectAll(Paiement.self, from: "paiement",
+                                                  orderBy: "date", ascending: false)
+        } catch { lastError = "paiement: \(error.localizedDescription)" }
     }
 
     func loadClients() async {
