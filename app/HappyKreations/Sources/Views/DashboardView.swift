@@ -99,6 +99,11 @@ struct DashboardView: View {
                     }
                 }
             }
+            NavigationLink(destination: ProductionView()) {
+                Label("Liste de production imprimable", systemImage: "printer")
+                    .font(.subheadline)
+            }
+            .padding(.top, 4)
         }
     }
 
