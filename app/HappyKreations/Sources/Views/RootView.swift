@@ -62,7 +62,10 @@ struct RootView: View {
             .navigationTitle(AppConfig.appName)
             .frame(minWidth: 200)
         } detail: {
-            sectionView(selection)
+            NavigationStack {
+                sectionView(selection)
+            }
+            .id(selection)
         }
         #else
         TabView(selection: $selection) {
