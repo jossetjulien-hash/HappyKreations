@@ -8,13 +8,15 @@ struct LoginView: View {
     var body: some View {
         VStack(spacing: 24) {
             VStack(spacing: 8) {
-                Image(systemName: "birthday.cake")
-                    .font(.system(size: 56))
-                    .foregroundStyle(.tint)
-                Text(AppConfig.appName)
-                    .font(.largeTitle).bold()
-                Text("Chocolats & meringues — gestion")
-                    .foregroundStyle(.secondary)
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 44))
+                    .foregroundStyle(Color.hkSage)
+                Text("happykreations")
+                    .font(.hkTitle(38, weight: .light))
+                    .foregroundStyle(Color.hkInk)
+                Text("créations faites main")
+                    .font(.hkScript(24))
+                    .foregroundStyle(Color.hkSageDeep)
             }
 
             VStack(spacing: 12) {

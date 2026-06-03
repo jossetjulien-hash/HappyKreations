@@ -10,6 +10,7 @@ struct HappyKreationsApp: App {
             RootView()
                 .environmentObject(auth)
                 .environmentObject(store)
+                .hkTheme()
                 .task {
                     await auth.restoreSession()
                 }

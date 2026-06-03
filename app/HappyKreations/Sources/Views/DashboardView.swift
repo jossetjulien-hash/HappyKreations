@@ -58,7 +58,7 @@ struct DashboardView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(salutation).font(.title2).bold()
+            Text(salutation).font(.hkTitle(28, weight: .regular))
             Text(dateHumaine).foregroundStyle(.secondary).font(.subheadline)
         }
     }
@@ -342,7 +342,7 @@ private struct SectionCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 Image(systemName: icone).foregroundStyle(tint)
-                Text(titre).font(.headline)
+                Text(titre).font(.hkTitle(20, weight: .regular))
             }
             content()
         }

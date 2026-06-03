@@ -22,6 +22,13 @@
 	<string>1</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>ATSApplicationFontsPath</key>
+	<string>.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Fraunces.ttf</string>
+		<string>Caveat.ttf</string>
+	</array>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>HappyKreations ajoute les retraits de commandes dans votre Calendrier Apple pour que vous les voyiez sur tous vos appareils.</string>
 	<key>NSCalendarsUsageDescription</key>

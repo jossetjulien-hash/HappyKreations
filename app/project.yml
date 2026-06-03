@@ -20,6 +20,7 @@ targets:
       - path: HappyKreations/Resources
     resources:
       - HappyKreations/Resources/Assets.xcassets
+      - HappyKreations/Resources/Fonts
     info:
       path: HappyKreations/Info.plist
       properties:
@@ -28,6 +29,10 @@ targets:
         CFBundleVersion: "1"
         UILaunchScreen:
           UIColorName: ""
+        UIAppFonts:
+          - Fraunces.ttf
+          - Caveat.ttf
+        ATSApplicationFontsPath: "."
         ITSAppUsesNonExemptEncryption: false
         NSFaceIDUsageDescription: "Face ID est utilisé pour déverrouiller l'application HappyKreations rapidement."
         NSCalendarsFullAccessUsageDescription: "HappyKreations ajoute les retraits de commandes dans votre Calendrier Apple pour que vous les voyiez sur tous vos appareils."

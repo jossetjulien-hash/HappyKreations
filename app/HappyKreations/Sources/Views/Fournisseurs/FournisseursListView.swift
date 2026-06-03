@@ -155,7 +155,7 @@ struct FournisseurDetailView: View {
                     VStack(spacing: 20) {
                         VStack(spacing: 10) {
                             ContactAvatar(initiales: f.initiales, size: 100)
-                            Text(f.nom).font(.title2).bold()
+                            Text(f.nom).font(.hkTitle(26, weight: .regular))
                                 .multilineTextAlignment(.center)
                         }
                         .padding(.top, 12)
