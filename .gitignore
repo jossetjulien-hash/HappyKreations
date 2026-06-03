@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+.vercel/
+*.log
+
+# Xcode / Swift
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+app/HappyKreations.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+
+# Editor
+.idea/
+.vscode/

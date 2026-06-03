@@ -1,0 +1,112 @@
+:root {
+  --bg: #fdfaf5;
+  --text: #2c1810;
+  --accent: #ce5a7c;
+  --muted: #7b6f63;
+  --card: #ffffff;
+  --border: #e5dccc;
+  --error: #c0392b;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+
+h1 { font-size: 28px; margin: 8px 0 4px; }
+h2 { font-size: 20px; margin: 24px 0 12px; }
+p { line-height: 1.5; }
+.muted { color: var(--muted); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin: 12px 0 4px;
+  font-size: 14px;
+}
+
+input, select, textarea {
+  width: 100%;
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: white;
+  color: inherit;
+}
+
+textarea { min-height: 80px; resize: vertical; }
+
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+}
+button:disabled { background: #c9b9a8; cursor: not-allowed; }
+button.secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.produit-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.produit-card:last-child { border-bottom: 0; }
+
+.qte-control { display: flex; align-items: center; gap: 8px; }
+.qte-control button {
+  width: 32px; height: 32px; padding: 0; border-radius: 50%;
+  font-size: 18px;
+}
+
+.dates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+}
+.date-cell {
+  text-align: center;
+  padding: 8px 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  background: white;
+}
+.date-cell.selected { background: var(--accent); color: white; border-color: var(--accent); }
+.date-cell.disabled { opacity: 0.35; cursor: not-allowed; }
+.date-cell .day { font-weight: 700; font-size: 16px; }
+.date-cell .month { font-size: 11px; color: var(--muted); }
+.date-cell.selected .month { color: white; }
+
+.error { color: var(--error); font-size: 14px; }
+.summary { background: #fff5e6; border: 1px solid #f0c270; }
