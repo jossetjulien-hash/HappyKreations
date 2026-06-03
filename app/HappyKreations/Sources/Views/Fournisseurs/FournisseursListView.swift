@@ -1,4 +1,10 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
+#if canImport(AppKit)
+import AppKit
+#endif
 
 struct FournisseursListView: View {
     @EnvironmentObject var store: AppStore
@@ -135,6 +141,8 @@ struct FournisseurDetailView: View {
     @EnvironmentObject var store: AppStore
     let fournisseurId: UUID
     @State private var edition = false
+    @State private var errorText: String?
+    @State private var rappelConfirme = false
 
     private var fournisseur: Fournisseur? {
         store.fournisseurs.first { $0.id == fournisseurId }
@@ -210,18 +218,36 @@ struct FournisseurDetailView: View {
                 }
             }
         }
+        .alert("Erreur", isPresented: .init(get: { errorText != nil }, set: { _ in errorText = nil })) {
+            Button("OK", role: .cancel) {}
+        } message: { Text(errorText ?? "") }
+        .alert("Rappel créé", isPresented: $rappelConfirme) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Un rappel « Commander chez \(fournisseur?.nom ?? "") » a été ajouté pour demain 9 h dans l'app Rappels.")
+        }
     }
 
     private func actionsRapides(for f: Fournisseur) -> some View {
-        HStack(spacing: 18) {
+        let tel = (f.telephone ?? "").isEmpty ? nil : f.telephone
+        let mail = (f.email ?? "").isEmpty ? nil : f.email
+        return HStack(spacing: 18) {
             QuickActionButton(title: "appeler", icon: "phone.fill",
-                              url: f.telephone.flatMap { URL(string: "tel:\(telBrut($0))") })
+                              enabled: tel != nil) {
+                if let t = tel, let u = URL(string: "tel:\(telBrut(t))") { openExternal(u) }
+            }
             QuickActionButton(title: "message", icon: "message.fill",
-                              url: f.telephone.flatMap { URL(string: "sms:\(telBrut($0))") })
+                              enabled: tel != nil) {
+                envoyerSMS(to: f)
+            }
             QuickActionButton(title: "mail", icon: "envelope.fill",
-                              url: f.email.flatMap { URL(string: "mailto:\($0)") })
-            QuickActionButton(title: "plan", icon: "map.fill",
-                              url: f.adresse.flatMap(mapsURL))
+                              enabled: mail != nil) {
+                envoyerEmail(to: f)
+            }
+            QuickActionButton(title: "rappel", icon: "bell.fill",
+                              enabled: true) {
+                Task { await creerRappel(for: f) }
+            }
         }
         .padding(.horizontal)
     }
@@ -259,34 +285,98 @@ struct FournisseurDetailView: View {
         let q = adresse.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? adresse
         return URL(string: "https://maps.apple.com/?q=\(q)")
     }
+
+    // MARK: - Actions réappro (message pré-rempli avec les matières sous seuil)
+
+    /// Compose un message de réappro listant les matières actuellement sous seuil.
+    private func messageReappro() -> String {
+        var lignes = ["Bonjour,", ""]
+        let matieres = store.matieresDisponibles.filter(\.sous_seuil).map(\.nom)
+        if matieres.isEmpty {
+            lignes.append("Je souhaiterais passer une commande de réapprovisionnement.")
+        } else {
+            lignes.append("Je souhaiterais commander les matières suivantes :")
+            for m in matieres { lignes.append("• \(m)") }
+        }
+        lignes.append("")
+        lignes.append("Merci d'avance,")
+        lignes.append(store.config["nom_atelier"] ?? "HappyKreations")
+        return lignes.joined(separator: "\n")
+    }
+
+    private func envoyerEmail(to f: Fournisseur) {
+        guard let email = f.email, !email.isEmpty else { return }
+        var comps = URLComponents()
+        comps.scheme = "mailto"
+        comps.path = email
+        comps.queryItems = [
+            URLQueryItem(name: "subject", value: "Réapprovisionnement HappyKreations"),
+            URLQueryItem(name: "body", value: messageReappro())
+        ]
+        guard let url = comps.url else { return }
+        openExternal(url)
+    }
+
+    private func envoyerSMS(to f: Fournisseur) {
+        guard let tel = f.telephone, !tel.isEmpty else { return }
+        var comps = URLComponents()
+        comps.scheme = "sms"
+        comps.path = telBrut(tel)
+        comps.queryItems = [URLQueryItem(name: "body", value: messageReappro())]
+        guard let url = comps.url else { return }
+        openExternal(url)
+    }
+
+    private func creerRappel(for f: Fournisseur) async {
+        let titre = "Commander chez \(f.nom)"
+        let notes = messageReappro()
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+        let due = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: tomorrow)
+        do {
+            let ok = try await RemindersService.shared.add(title: titre, notes: notes, dueDate: due)
+            if ok { rappelConfirme = true }
+            else {
+                errorText = "Accès aux Rappels refusé. Tu peux l'activer dans Réglages → Confidentialité → Rappels."
+            }
+        } catch {
+            errorText = error.localizedDescription
+        }
+    }
+
+    private func openExternal(_ url: URL) {
+        #if os(macOS)
+        NSWorkspace.shared.open(url)
+        #else
+        if UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url)
+        } else {
+            errorText = "Aucune app installée pour ouvrir ce lien."
+        }
+        #endif
+    }
 }
 
 private struct QuickActionButton: View {
     let title: String
     let icon: String
-    let url: URL?
+    var enabled: Bool = true
+    let action: () -> Void
 
     var body: some View {
         VStack(spacing: 6) {
-            Group {
-                if let url {
-                    Link(destination: url) { icon(enabled: true) }
-                } else {
-                    icon(enabled: false)
+            Button(action: { if enabled { action() } }) {
+                ZStack {
+                    Circle().fill(enabled ? Color.accentColor.opacity(0.15) : Color.gray.opacity(0.1))
+                    Image(systemName: icon)
+                        .foregroundStyle(enabled ? Color.accentColor : .gray)
                 }
+                .frame(width: 48, height: 48)
             }
+            .buttonStyle(.plain)
+            .disabled(!enabled)
             Text(title).font(.caption).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
-    }
-
-    private func icon(enabled: Bool) -> some View {
-        ZStack {
-            Circle().fill(enabled ? Color.accentColor.opacity(0.15) : Color.gray.opacity(0.1))
-            Image(systemName: icon)
-                .foregroundStyle(enabled ? Color.accentColor : .gray)
-        }
-        .frame(width: 48, height: 48)
     }
 }
 

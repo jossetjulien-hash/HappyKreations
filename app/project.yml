@@ -32,6 +32,8 @@ targets:
         NSFaceIDUsageDescription: "Face ID est utilisé pour déverrouiller l'application HappyKreations rapidement."
         NSCalendarsFullAccessUsageDescription: "HappyKreations ajoute les retraits de commandes dans votre Calendrier Apple pour que vous les voyiez sur tous vos appareils."
         NSCalendarsUsageDescription: "HappyKreations ajoute les retraits de commandes dans votre Calendrier Apple pour que vous les voyiez sur tous vos appareils."
+        NSRemindersFullAccessUsageDescription: "HappyKreations crée des rappels (ex. \"Commander chez le fournisseur X\") dans votre app Rappels."
+        NSRemindersUsageDescription: "HappyKreations crée des rappels (ex. \"Commander chez le fournisseur X\") dans votre app Rappels."
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.happykreations.app
@@ -56,3 +58,4 @@ targets:
         com.apple.security.network.client: true
         com.apple.security.files.user-selected.read-write: true
         com.apple.security.personal-information.calendars: true
+        com.apple.security.personal-information.reminders: true

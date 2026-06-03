@@ -28,6 +28,10 @@
 	<string>HappyKreations ajoute les retraits de commandes dans votre Calendrier Apple pour que vous les voyiez sur tous vos appareils.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Face ID est utilisé pour déverrouiller l'application HappyKreations rapidement.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>HappyKreations crée des rappels (ex. "Commander chez le fournisseur X") dans votre app Rappels.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>HappyKreations crée des rappels (ex. "Commander chez le fournisseur X") dans votre app Rappels.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
