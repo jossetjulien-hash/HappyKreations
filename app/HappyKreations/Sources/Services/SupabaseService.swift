@@ -12,6 +12,14 @@ final class SupabaseService {
             db: SupabaseClientOptions.DatabaseOptions(
                 encoder: Self.encoder,
                 decoder: Self.decoder
+            ),
+            auth: SupabaseClientOptions.AuthOptions(
+                // Nouveau comportement supabase-swift : la session locale est
+                // toujours émise comme initial session (au lieu d'attendre la
+                // tentative de refresh). On gère côté AuthStore l'expiration
+                // via session.isExpired si besoin. Évite le warning et aligne
+                // sur la future major release.
+                emitLocalSessionAsInitialSession: true
             )
         )
         self.client = SupabaseClient(

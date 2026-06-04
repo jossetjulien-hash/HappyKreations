@@ -41,6 +41,15 @@ targets:
         NSRemindersUsageDescription: "HappyKreations crée des rappels (ex. \"Commander chez le fournisseur X\") dans votre app Rappels."
         NSUserActivityTypes:
           - com.apple.corespotlight.searchableitem.action
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        "UISupportedInterfaceOrientations~ipad":
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.happykreations.app
