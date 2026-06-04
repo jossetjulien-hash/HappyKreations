@@ -97,8 +97,18 @@ struct Repository {
     /// Upload une photo dans le bucket `produits` et retourne l'URL publique.
     /// `data` doit être du JPEG/PNG. `ext` est l'extension sans le point (jpg, png, heic…).
     func uploadPhotoProduit(produit id: UUID, data: Data, ext: String) async throws -> String {
+        try await uploadPhoto(bucket: "produits", id: id, data: data, ext: ext)
+    }
+
+    /// Upload une photo de référence pour une commande (« comme ce style »).
+    /// Bucket `commandes-refs`, public en lecture.
+    func uploadPhotoCommande(commande id: UUID, data: Data, ext: String) async throws -> String {
+        try await uploadPhoto(bucket: "commandes-refs", id: id, data: data, ext: ext)
+    }
+
+    private func uploadPhoto(bucket name: String, id: UUID, data: Data, ext: String) async throws -> String {
         let path = "\(id.uuidString.lowercased()).\(ext.lowercased())"
-        let bucket = client.storage.from("produits")
+        let bucket = client.storage.from(name)
         _ = try await bucket.upload(
             path,
             data: data,

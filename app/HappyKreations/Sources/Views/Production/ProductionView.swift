@@ -225,7 +225,8 @@ struct ProductionView: View {
                     allergies: c.allergies,
                     gravure: c.message_gravure,
                     couleur: c.couleur,
-                    notes: c.notes)
+                    notes: c.notes,
+                    photoRefURL: c.photo_ref_url)
             })
 
         let renderer = ImageRenderer(content: ProductionSheet(model: model).frame(width: 595))
@@ -303,23 +304,35 @@ private struct CommandeBloc: View {
     let produitNom: (UUID) -> String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(clientNom).font(.headline)
-            ForEach(lignes) { l in
-                LigneRow(ligne: l, produitNom: produitNom(l.produit_id))
+        HStack(alignment: .top, spacing: 12) {
+            if let s = commande.photo_ref_url, let u = URL(string: s) {
+                AsyncImage(url: u) { phase in
+                    switch phase {
+                    case .success(let img): img.resizable().scaledToFill()
+                    default: Color.secondary.opacity(0.08)
+                    }
+                }
+                .frame(width: 72, height: 72)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            if !commande.allergies.isEmpty {
-                etiquette("Allergies : \(commande.allergies.joined(separator: ", "))",
-                          color: .orange)
-            }
-            if let g = commande.message_gravure, !g.isEmpty {
-                etiquette("Gravure : « \(g) »", color: Color.hkRoseDeep)
-            }
-            if let col = commande.couleur, !col.isEmpty {
-                etiquette("Couleur : \(col)", color: Color.hkSageDeep)
-            }
-            if let n = commande.notes, !n.isEmpty {
-                Text(n).font(.caption).foregroundStyle(.secondary).italic()
+            VStack(alignment: .leading, spacing: 6) {
+                Text(clientNom).font(.headline)
+                ForEach(lignes) { l in
+                    LigneRow(ligne: l, produitNom: produitNom(l.produit_id))
+                }
+                if !commande.allergies.isEmpty {
+                    etiquette("Allergies : \(commande.allergies.joined(separator: ", "))",
+                              color: .orange)
+                }
+                if let g = commande.message_gravure, !g.isEmpty {
+                    etiquette("Gravure : « \(g) »", color: Color.hkRoseDeep)
+                }
+                if let col = commande.couleur, !col.isEmpty {
+                    etiquette("Couleur : \(col)", color: Color.hkSageDeep)
+                }
+                if let n = commande.notes, !n.isEmpty {
+                    Text(n).font(.caption).foregroundStyle(.secondary).italic()
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -390,6 +403,7 @@ struct PrintCommande: Identifiable {
     let gravure: String?
     let couleur: String?
     let notes: String?
+    let photoRefURL: String?
 }
 struct PrintModel {
     let dateLabel: String
@@ -453,6 +467,10 @@ struct ProductionSheet: View {
                         if !c.allergies.isEmpty {
                             Text("⚠︎ Allergies : \(c.allergies.joined(separator: ", "))")
                                 .font(.system(size: 11, weight: .semibold)).foregroundStyle(.orange)
+                        }
+                        if c.photoRefURL != nil {
+                            Text("📷 Photo de référence jointe (voir dans l'app)")
+                                .font(.system(size: 10)).foregroundStyle(.secondary).italic()
                         }
                         if let g = c.gravure, !g.isEmpty {
                             Text("✎ Gravure : « \(g) »").font(.system(size: 11))

@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       client, date_retrait, date_evenement, type_evenement, lignes, notes,
-      allergies, message_gravure, couleur, origin,
+      allergies, message_gravure, couleur, photo_ref_url, origin,
     } = body;
     if (!client?.nom || !date_retrait || !Array.isArray(lignes) || lignes.length === 0) {
       return json({ error: "payload_incomplet" }, { status: 400 });
@@ -54,6 +54,12 @@ Deno.serve(async (req) => {
       ? message_gravure.slice(0, 200) : null;
     const couleurClean = typeof couleur === "string"
       ? couleur.slice(0, 80) : null;
+    // L'URL est uploadée en amont par le client dans le bucket public
+    // commandes-refs. On valide juste qu'elle pointe bien dessus.
+    const photoRefClean = typeof photo_ref_url === "string"
+      && photo_ref_url.includes("/storage/v1/object/public/commandes-refs/")
+      ? photo_ref_url.slice(0, 500)
+      : null;
 
     // 1. Valider la disponibilité de la date
     const [{ data: capJour }, { data: configRows }] = await Promise.all([
@@ -134,6 +140,7 @@ Deno.serve(async (req) => {
       allergies: allergiesClean,
       message_gravure: gravureClean,
       couleur: couleurClean,
+      photo_ref_url: photoRefClean,
     }).select("id").single();
     if (cmdErr) throw cmdErr;
 

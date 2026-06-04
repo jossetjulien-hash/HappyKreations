@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 struct CommandeEditView: View {
     @EnvironmentObject var store: AppStore
@@ -12,6 +13,8 @@ struct CommandeEditView: View {
     @State private var paiements: [Paiement] = []
     @State private var isLoading = false
     @State private var errorText: String?
+    @State private var photoRefItem: PhotosPickerItem?
+    @State private var photoRefUploading = false
 
     init(commandeId: UUID, draft: Commande? = nil, isNew: Bool = false) {
         self.commandeId = commandeId
@@ -27,6 +30,7 @@ struct CommandeEditView: View {
     var body: some View {
         Form {
             sectionInfos
+            sectionPhotoRef
             sectionPersonnalisation
             sectionLignes
             sectionTotaux
@@ -36,6 +40,10 @@ struct CommandeEditView: View {
         .formStyle(.grouped)
         .navigationTitle(isNew ? "Nouvelle commande" : "Commande")
         .task { await load() }
+        .onChange(of: photoRefItem) { _, item in
+            guard let item else { return }
+            Task { await uploadPhotoRef(item) }
+        }
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button(isNew ? "Créer" : "Enregistrer") { Task { await save() } }
@@ -71,6 +79,43 @@ struct CommandeEditView: View {
             Picker("Canal", selection: $draft.canal) {
                 ForEach(CanalCommande.allCases) { Text($0.libelle).tag($0) }
             }
+        }
+    }
+
+    private var sectionPhotoRef: some View {
+        Section {
+            HStack(spacing: 14) {
+                PhotoRefThumb(url: draft.photo_ref_url, size: 88)
+                VStack(alignment: .leading, spacing: 6) {
+                    PhotosPicker(selection: $photoRefItem,
+                                 matching: .images,
+                                 photoLibrary: .shared()) {
+                        Label(draft.photo_ref_url == nil
+                              ? "Ajouter une photo de référence"
+                              : "Remplacer la photo",
+                              systemImage: "photo.on.rectangle.angled")
+                    }
+                    .disabled(photoRefUploading || isNew)
+                    if isNew {
+                        Text("Enregistre d'abord la commande pour pouvoir y joindre une photo.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    if photoRefUploading {
+                        ProgressView().controlSize(.small)
+                    }
+                    if draft.photo_ref_url != nil && !photoRefUploading && !isNew {
+                        Button(role: .destructive) {
+                            draft.photo_ref_url = nil
+                            Task { await save() }
+                        } label: { Label("Supprimer", systemImage: "trash") }
+                            .font(.caption)
+                    }
+                }
+            }
+        } header: {
+            Text("Photo de référence")
+        } footer: {
+            Text("Photo « comme ce style » envoyée par le client ou prise par vous, visible aussi sur la feuille de production.")
         }
     }
 
@@ -253,6 +298,70 @@ struct CommandeEditView: View {
     private func bindingDate(_ binding: Binding<Date?>) -> Binding<Date> {
         Binding(get: { binding.wrappedValue ?? Date() },
                 set: { binding.wrappedValue = $0 })
+    }
+
+    // MARK: - Upload photo de référence
+
+    private func uploadPhotoRef(_ item: PhotosPickerItem) async {
+        photoRefUploading = true
+        defer { photoRefUploading = false; photoRefItem = nil }
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else { return }
+            let (payload, ext) = compressedJPEG(data) ?? (data, "jpg")
+            let url = try await store.repo.uploadPhotoCommande(
+                commande: commandeId, data: payload, ext: ext)
+            draft.photo_ref_url = url
+            _ = try await store.repo.update("commande", draft, id: draft.id)
+            await store.loadCommandes()
+        } catch { errorText = error.localizedDescription }
+    }
+
+    private func compressedJPEG(_ data: Data) -> (Data, String)? {
+        #if canImport(UIKit)
+        if let img = UIImage(data: data),
+           let jpeg = img.jpegData(compressionQuality: 0.8) {
+            return (jpeg, "jpg")
+        }
+        #endif
+        return nil
+    }
+}
+
+/// Vignette de la photo de référence (avec placeholder).
+private struct PhotoRefThumb: View {
+    let url: String?
+    var size: CGFloat = 88
+
+    var body: some View {
+        Group {
+            if let s = url, let u = URL(string: s) {
+                AsyncImage(url: u) { phase in
+                    switch phase {
+                    case .success(let img):
+                        img.resizable().scaledToFill()
+                    default:
+                        placeholder
+                    }
+                }
+            } else {
+                placeholder
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(Color.secondary.opacity(0.18))
+        )
+    }
+
+    private var placeholder: some View {
+        ZStack {
+            Color.secondary.opacity(0.08)
+            Image(systemName: "photo")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 

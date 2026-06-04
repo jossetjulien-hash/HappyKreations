@@ -21,9 +21,31 @@ export default function Page() {
   const [allergies, setAllergies] = useState<string[]>([]);
   const [messageGravure, setMessageGravure] = useState("");
   const [couleur, setCouleur] = useState("");
+  const [photoRef, setPhotoRef] = useState<File | null>(null);
+  const [photoRefPreview, setPhotoRefPreview] = useState<string | null>(null);
   const [client, setClient] = useState<ClientInfo>({ nom: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null;
+    setPhotoRef(f);
+    setPhotoRefPreview(f ? URL.createObjectURL(f) : null);
+  }
+
+  /** Upload la photo de référence dans le bucket public commandes-refs.
+   *  Retourne l'URL publique ou null si pas de photo. */
+  async function uploadPhotoRef(): Promise<string | null> {
+    if (!photoRef) return null;
+    const ext = (photoRef.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from("commandes-refs")
+      .upload(path, photoRef, { contentType: photoRef.type, upsert: false });
+    if (upErr) throw new Error(`Photo : ${upErr.message}`);
+    const { data } = supabase.storage.from("commandes-refs").getPublicUrl(path);
+    return `${data.publicUrl}?v=${Date.now()}`;
+  }
 
   useEffect(() => {
     (async () => {
@@ -93,6 +115,10 @@ export default function Page() {
 
     setLoading(true);
     try {
+      // Upload de la photo de référence en amont (l'edge function n'aura
+      // qu'à stocker l'URL — pas de gestion de fichier côté serveur).
+      const photoUrl = await uploadPhotoRef();
+
       const r = await fetch(SUPABASE_FN_URL, {
         method: "POST",
         headers: { "content-type": "application/json", apikey: ANON, authorization: `Bearer ${ANON}` },
@@ -106,6 +132,7 @@ export default function Page() {
           allergies,
           message_gravure: messageGravure || null,
           couleur: couleur || null,
+          photo_ref_url: photoUrl,
           origin: window.location.origin,
         }),
       });
@@ -231,6 +258,23 @@ export default function Page() {
 
         <label>Couleur souhaitée (facultatif)</label>
         <input value={couleur} onChange={(e) => setCouleur(e.target.value)} placeholder="Rose poudré, sauge, thème champêtre…" />
+
+        <label>Photo « comme ce style » (facultatif)</label>
+        <div className="photo-ref-uploader">
+          <label className="photo-ref-trigger">
+            <input type="file" accept="image/*" onChange={onPhotoChange} hidden />
+            {photoRefPreview ? "Remplacer la photo" : "Joindre une photo de référence"}
+          </label>
+          {photoRefPreview && (
+            <div className="photo-ref-preview">
+              <img src={photoRefPreview} alt="Aperçu" />
+              <button type="button" className="photo-ref-remove"
+                onClick={() => { setPhotoRef(null); setPhotoRefPreview(null); }}>
+                Retirer
+              </button>
+            </div>
+          )}
+        </div>
 
         <label>Notes</label>
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Toute autre préférence…" />

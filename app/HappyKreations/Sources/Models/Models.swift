@@ -243,6 +243,7 @@ struct Commande: Codable, Identifiable, Hashable {
     var allergies: [String]
     var message_gravure: String?
     var couleur: String?
+    var photo_ref_url: String?
     var created_by: UUID?
     var created_at: Date?
     var updated_at: Date?
@@ -257,19 +258,21 @@ struct Commande: Codable, Identifiable, Hashable {
          date_evenement: Date?, date_retrait: Date?, statut: StatutCommande,
          total: Double, acompte: Double, notes: String?,
          allergies: [String] = [], message_gravure: String? = nil, couleur: String? = nil,
+         photo_ref_url: String? = nil,
          created_by: UUID? = nil, created_at: Date? = nil, updated_at: Date? = nil) {
         self.id = id; self.client_id = client_id; self.canal = canal
         self.type_evenement = type_evenement; self.date_evenement = date_evenement
         self.date_retrait = date_retrait; self.statut = statut
         self.total = total; self.acompte = acompte; self.notes = notes
         self.allergies = allergies; self.message_gravure = message_gravure; self.couleur = couleur
+        self.photo_ref_url = photo_ref_url
         self.created_by = created_by; self.created_at = created_at; self.updated_at = updated_at
     }
 
     enum CodingKeys: String, CodingKey {
         case id, client_id, canal, type_evenement, date_evenement, date_retrait,
              statut, total, acompte, notes, allergies, message_gravure, couleur,
-             created_by, created_at, updated_at
+             photo_ref_url, created_by, created_at, updated_at
     }
 
     init(from decoder: Decoder) throws {
@@ -287,6 +290,7 @@ struct Commande: Codable, Identifiable, Hashable {
         allergies = try c.decodeIfPresent([String].self, forKey: .allergies) ?? []
         message_gravure = try c.decodeIfPresent(String.self, forKey: .message_gravure)
         couleur = try c.decodeIfPresent(String.self, forKey: .couleur)
+        photo_ref_url = try c.decodeIfPresent(String.self, forKey: .photo_ref_url)
         created_by = try c.decodeIfPresent(UUID.self, forKey: .created_by)
         created_at = try c.decodeIfPresent(Date.self, forKey: .created_at)
         updated_at = try c.decodeIfPresent(Date.self, forKey: .updated_at)

@@ -256,6 +256,57 @@ button.secondary {
 .date-cell .month { font-size: 11px; color: var(--ink-soft); font-weight: 600; }
 .date-cell.selected .month { color: rgba(255, 255, 255, 0.85); }
 
+/* ---------- Uploader photo référence ---------- */
+.photo-ref-uploader {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+.photo-ref-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 18px;
+  border-radius: 12px;
+  border: 1px dashed var(--sage-deep);
+  background: var(--cream);
+  color: var(--sage-deep);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+.photo-ref-trigger:hover {
+  background: var(--cream-deep);
+  border-color: var(--rose-deep);
+  color: var(--rose-deep);
+}
+.photo-ref-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: var(--cream);
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+}
+.photo-ref-preview img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.photo-ref-remove {
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid var(--rose-deep);
+  color: var(--rose-deep);
+  font-size: 0.85rem;
+  border-radius: 999px;
+}
+.photo-ref-remove:hover { background: var(--rose-deep); color: white; }
+
 .error { color: var(--error); font-size: 0.9rem; }
 
 .summary {
