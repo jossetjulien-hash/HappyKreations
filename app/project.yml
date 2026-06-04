@@ -61,7 +61,6 @@ targets:
     dependencies:
       - package: Supabase
         product: Supabase
-      - target: HappyKreationsWidget
     entitlements:
       path: HappyKreations/HappyKreations.entitlements
       properties:
@@ -70,37 +69,47 @@ targets:
         com.apple.security.files.user-selected.read-write: true
         com.apple.security.personal-information.calendars: true
         com.apple.security.personal-information.reminders: true
-        com.apple.security.application-groups:
-          - group.com.happykreations.app
 
-  HappyKreationsWidget:
-    type: app-extension
-    platform: iOS
-    deploymentTarget: "17.0"
-    sources:
-      - path: HappyKreationsWidget
-        excludes:
-          - "HappyKreationsWidget.entitlements"
-          - "Info.plist"
-      - path: HappyKreations/Resources/Assets.xcassets
-    info:
-      path: HappyKreationsWidget/Info.plist
-      properties:
-        CFBundleDisplayName: "Aujourd'hui"
-        CFBundleShortVersionString: "1.0.0"
-        CFBundleVersion: "1"
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.happykreations.app.widget
-        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
-        CODE_SIGN_STYLE: Automatic
-        SWIFT_VERSION: "5.10"
-        TARGETED_DEVICE_FAMILY: "1,2"
-        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
-        GENERATE_INFOPLIST_FILE: NO
-    entitlements:
-      path: HappyKreationsWidget/HappyKreationsWidget.entitlements
-      properties:
-        com.apple.security.app-sandbox: true
-        com.apple.security.application-groups:
-          - group.com.happykreations.app
+# === Widget Extension (désactivée temporairement) ===
+#
+# Le target HappyKreationsWidget nécessite un Apple Developer Program payant
+# (99 €/an) car les widget extensions exigent un App ID secondaire et un
+# provisioning profile dédié — impossibles à générer avec un compte Apple ID
+# gratuit.
+#
+# Le code source reste dans app/HappyKreationsWidget/ pour quand le Developer
+# Program sera activé : il suffira alors de décommenter le bloc target ci-
+# dessous + la ligne `- target: HappyKreationsWidget` dans dependencies, et
+# de réactiver les entitlements App Groups sur l'app principale.
+#
+#  HappyKreationsWidget:
+#    type: app-extension
+#    platform: iOS
+#    deploymentTarget: "17.0"
+#    sources:
+#      - path: HappyKreationsWidget
+#        excludes:
+#          - "HappyKreationsWidget.entitlements"
+#          - "Info.plist"
+#      - path: HappyKreations/Resources/Assets.xcassets
+#    info:
+#      path: HappyKreationsWidget/Info.plist
+#      properties:
+#        CFBundleDisplayName: "Aujourd'hui"
+#        CFBundleShortVersionString: "1.0.0"
+#        CFBundleVersion: "1"
+#    settings:
+#      base:
+#        PRODUCT_BUNDLE_IDENTIFIER: com.happykreations.app.widget
+#        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+#        CODE_SIGN_STYLE: Automatic
+#        SWIFT_VERSION: "5.10"
+#        TARGETED_DEVICE_FAMILY: "1,2"
+#        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+#        GENERATE_INFOPLIST_FILE: NO
+#    entitlements:
+#      path: HappyKreationsWidget/HappyKreationsWidget.entitlements
+#      properties:
+#        com.apple.security.app-sandbox: true
+#        com.apple.security.application-groups:
+#          - group.com.happykreations.app
