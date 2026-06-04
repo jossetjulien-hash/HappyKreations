@@ -13,6 +13,13 @@ struct FournisseursListView: View {
 
     var body: some View {
         List {
+            Section("Préparer les courses") {
+                NavigationLink {
+                    CoursesFournisseursView()
+                } label: {
+                    Label("Liste de courses sur N jours", systemImage: "cart.fill.badge.plus")
+                }
+            }
             Section("Alertes réapprovisionnement") {
                 let alertes = store.matieresDisponibles.filter(\.sous_seuil)
                 if alertes.isEmpty {
@@ -32,7 +39,7 @@ struct FournisseursListView: View {
                     NavigationLink {
                         BonReapproSuggereView()
                     } label: {
-                        Label("Préparer des bons de réappro", systemImage: "wand.and.rays")
+                        Label("Préparer depuis les seuils", systemImage: "wand.and.rays")
                     }
                 }
             }
