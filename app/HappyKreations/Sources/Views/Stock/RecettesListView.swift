@@ -28,7 +28,7 @@ struct RecettesListView: View {
                 }
             }
         }
-        .navigationTitle("Recettes & Produits")
+        .navigationTitle("Catalogue produits")
         .toolbar {
             ToolbarItem {
                 Button {

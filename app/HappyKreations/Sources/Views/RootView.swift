@@ -11,7 +11,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .commandes:    return "Commandes"
         case .agenda:       return "Agenda"
         case .stock:        return "Stock"
-        case .recettes:     return "Recettes"
+        case .recettes:     return "Catalogue produits"
         case .fournisseurs: return "Fournisseurs"
         case .clients:      return "Clients"
         case .stats:        return "Statistiques"
