@@ -39,6 +39,8 @@ targets:
         NSCalendarsUsageDescription: "HappyKreations ajoute les retraits de commandes dans votre Calendrier Apple pour que vous les voyiez sur tous vos appareils."
         NSRemindersFullAccessUsageDescription: "HappyKreations crée des rappels (ex. \"Commander chez le fournisseur X\") dans votre app Rappels."
         NSRemindersUsageDescription: "HappyKreations crée des rappels (ex. \"Commander chez le fournisseur X\") dans votre app Rappels."
+        NSUserActivityTypes:
+          - com.apple.corespotlight.searchableitem.action
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.happykreations.app

@@ -57,6 +57,8 @@ final class AppStore: ObservableObject {
         async let cf: () = loadConfig()
         async let t: () = loadTemoignages()
         _ = await (c, p, m, co, pa, f, b, k, cf, t)
+        // Indexation Spotlight des données fraîchement chargées.
+        await SpotlightIndexer.reindex(store: self)
     }
 
     func loadTemoignages() async {

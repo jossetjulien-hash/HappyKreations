@@ -39,6 +39,10 @@
 	<string>HappyKreations crée des rappels (ex. "Commander chez le fournisseur X") dans votre app Rappels.</string>
 	<key>NSRemindersUsageDescription</key>
 	<string>HappyKreations crée des rappels (ex. "Commander chez le fournisseur X") dans votre app Rappels.</string>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>com.apple.corespotlight.searchableitem.action</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreSpotlight
 
 enum AppSection: String, CaseIterable, Identifiable {
     case dashboard, commandes, agenda, stock, recettes, fournisseurs, clients, stats, temoignages, reglages
@@ -56,8 +57,22 @@ struct RootView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in
-            // Verrouille quand l'app passe en background (revient verrouillée).
             if phase == .background { auth.lock() }
+        }
+        // Réception d'un tap depuis Spotlight : route vers la bonne section.
+        .onContinueUserActivity(CSSearchableItemActionType) { activity in
+            handleSpotlight(activity)
+        }
+    }
+
+    /// Décode l'identifiant Spotlight pour basculer sur la section correspondante.
+    private func handleSpotlight(_ activity: NSUserActivity) {
+        guard let identifier = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String
+        else { return }
+        if identifier.hasPrefix("\(SpotlightIndexer.kindCommande):") {
+            selection = .commandes
+        } else if identifier.hasPrefix("\(SpotlightIndexer.kindClient):") {
+            selection = .clients
         }
     }
 
