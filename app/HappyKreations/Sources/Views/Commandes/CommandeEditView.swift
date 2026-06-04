@@ -13,6 +13,10 @@ struct CommandeEditView: View {
     let commandeId: UUID
     @State var draft: Commande
     var isNew: Bool = false
+    /// Appelé après création réussie d'une nouvelle commande. Permet à la
+    /// Boîte de réception, par exemple, de marquer son `commande_entrante`
+    /// associé comme « importée » + lier l'UUID de la commande créée.
+    var onCreated: ((Commande) -> Void)? = nil
 
     @State private var lignes: [CommandeLigne] = []
     @State private var paiements: [Paiement] = []
@@ -24,10 +28,12 @@ struct CommandeEditView: View {
     @State private var lienAPartager: URL?
     @State private var nouveauClient: Client?
 
-    init(commandeId: UUID, draft: Commande? = nil, isNew: Bool = false) {
+    init(commandeId: UUID, draft: Commande? = nil, isNew: Bool = false,
+         onCreated: ((Commande) -> Void)? = nil) {
         self.commandeId = commandeId
         self._draft = State(initialValue: draft ?? Commande.new())
         self.isNew = isNew
+        self.onCreated = onCreated
     }
 
     /// Allergènes courants pour les chocolats & meringues (cases à cocher).
@@ -347,10 +353,12 @@ struct CommandeEditView: View {
         d.total = totalCalcule
         d.updated_at = Date()
         do {
+            var inserted: Commande? = nil
             if isNew {
-                let inserted: Commande = try await store.repo.insert("commande", d)
+                let row: Commande = try await store.repo.insert("commande", d)
+                inserted = row
                 for var l in lignes {
-                    l.commande_id = inserted.id
+                    l.commande_id = row.id
                     _ = try await store.repo.insert("commande_ligne", l)
                 }
             } else {
@@ -364,6 +372,7 @@ struct CommandeEditView: View {
                 }
             }
             await store.loadCommandes()
+            if let inserted { onCreated?(inserted) }
             if isNew { dismiss() }
         } catch { errorText = error.localizedDescription }
     }

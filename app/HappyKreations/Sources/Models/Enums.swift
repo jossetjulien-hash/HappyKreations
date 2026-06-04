@@ -8,13 +8,32 @@ enum CategorieProduit: String, Codable, CaseIterable, Identifiable {
 
 enum CanalCommande: String, Codable, CaseIterable, Identifiable {
     case formulaire, messenger, email, manuel
+    case marketplace, instagram, whatsapp, sms
     var id: String { rawValue }
     var libelle: String {
         switch self {
-        case .formulaire: return "Formulaire en ligne"
-        case .messenger:  return "Messenger"
-        case .email:      return "Email"
-        case .manuel:     return "Saisie manuelle"
+        case .formulaire:  return "Formulaire en ligne"
+        case .messenger:   return "Messenger"
+        case .email:       return "Email"
+        case .manuel:      return "Saisie manuelle"
+        case .marketplace: return "Marketplace"
+        case .instagram:   return "Instagram"
+        case .whatsapp:    return "WhatsApp"
+        case .sms:         return "SMS"
+        }
+    }
+
+    /// SF Symbol pour l'affichage compact dans la liste de la Boîte de réception.
+    var icone: String {
+        switch self {
+        case .formulaire:  return "globe"
+        case .messenger:   return "bubble.left.fill"
+        case .email:       return "envelope.fill"
+        case .manuel:      return "pencil"
+        case .marketplace: return "storefront"
+        case .instagram:   return "camera.fill"
+        case .whatsapp:    return "phone.bubble.fill"
+        case .sms:         return "message.fill"
         }
     }
 }

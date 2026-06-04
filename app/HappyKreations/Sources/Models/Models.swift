@@ -488,6 +488,23 @@ struct CommandeEntrante: Codable, Identifiable, Hashable {
     var statut: StatutEntrante
     var recu_le: Date
     var commande_id: UUID?
+
+    static func new() -> CommandeEntrante {
+        CommandeEntrante(id: UUID(), canal: .manuel, message_brut: "",
+                         donnee_extraite: nil, statut: .a_valider,
+                         recu_le: Date(), commande_id: nil)
+    }
+
+    /// Première ligne du message (sert d'aperçu dans la liste).
+    var apercu: String {
+        message_brut
+            .split(separator: "\n").first.map(String.init) ?? message_brut
+    }
+
+    /// Nom potentiel de l'expéditeur extrait depuis `donnee_extraite`.
+    var expediteur: String? {
+        donnee_extraite?.client?.nom
+    }
 }
 
 /// Payload retourné par l'Edge Function `parse-claude`.

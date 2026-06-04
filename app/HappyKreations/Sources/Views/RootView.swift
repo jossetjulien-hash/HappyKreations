@@ -2,13 +2,14 @@ import SwiftUI
 import CoreSpotlight
 
 enum AppSection: String, CaseIterable, Identifiable {
-    case dashboard, commandes, agenda, stock, recettes, fournisseurs, clients, stats, temoignages, reglages
+    case dashboard, commandes, inbox, agenda, stock, recettes, fournisseurs, clients, stats, temoignages, reglages
     var id: String { rawValue }
 
     var label: String {
         switch self {
         case .dashboard:    return "Tableau de bord"
         case .commandes:    return "Commandes"
+        case .inbox:        return "Boîte de réception"
         case .agenda:       return "Agenda"
         case .stock:        return "Stock"
         case .recettes:     return "Catalogue produits"
@@ -24,6 +25,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         switch self {
         case .dashboard:    return "rectangle.3.group"
         case .commandes:    return "list.bullet.rectangle"
+        case .inbox:        return "tray.and.arrow.down"
         case .agenda:       return "calendar"
         case .stock:        return "shippingbox"
         case .recettes:     return "list.clipboard"
@@ -116,14 +118,15 @@ struct RootView: View {
         #endif
     }
 
-    private let primaryTabs: [AppSection] = [.dashboard, .commandes, .agenda, .stock]
-    private let secondaryTabs: [AppSection] = [.recettes, .fournisseurs, .clients, .stats, .temoignages, .reglages]
+    private let primaryTabs: [AppSection] = [.dashboard, .commandes, .inbox, .agenda]
+    private let secondaryTabs: [AppSection] = [.stock, .recettes, .fournisseurs, .clients, .stats, .temoignages, .reglages]
 
     @ViewBuilder
     private func sectionView(_ section: AppSection) -> some View {
         switch section {
         case .dashboard:    DashboardView()
         case .commandes:    CommandesListView()
+        case .inbox:        InboxView()
         case .agenda:       AgendaView()
         case .stock:        MatieresListView()
         case .recettes:     RecettesListView()
