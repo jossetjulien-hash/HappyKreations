@@ -182,7 +182,8 @@ struct RecetteEditView: View {
                 }
                 LabeledContent("Coût matière") {
                     Text(marge.cout_matiere, format: .currency(code: "EUR"))
-                        .foregroundStyle(marge.cout_complet == true ? .secondary : .orange)
+                        .foregroundStyle(marge.cout_complet == true
+                                         ? Color.secondary : Color.orange)
                 }
                 LabeledContent("Marge brute") {
                     HStack(spacing: 8) {
