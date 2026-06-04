@@ -96,6 +96,20 @@ struct MatiereEditView: View {
                         #endif
                     Text(draft.unite)
                 }
+                HStack {
+                    Text("Coût d'achat")
+                    Spacer()
+                    TextField("", value: Binding(
+                        get: { draft.cout_unitaire ?? 0 },
+                        set: { draft.cout_unitaire = $0 > 0 ? $0 : nil }),
+                        format: .number.precision(.fractionLength(0...4)))
+                        .multilineTextAlignment(.trailing).frame(width: 100)
+                        #if os(iOS)
+                        .keyboardType(.decimalPad)
+                        #endif
+                    Text("€/\(draft.unite)")
+                        .foregroundStyle(.secondary)
+                }
             }
             if !isNew {
                 Section("Ajustement") {

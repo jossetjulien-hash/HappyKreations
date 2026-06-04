@@ -10,6 +10,7 @@ final class AppStore: ObservableObject {
     @Published var produits: [Produit] = []
     @Published var matieres: [Matiere] = []
     @Published var matieresDisponibles: [MatiereDisponible] = []
+    @Published var produitsMarges: [ProduitMarge] = []
     @Published var commandes: [Commande] = []
     @Published var paiements: [Paiement] = []
     @Published var fournisseurs: [Fournisseur] = []
@@ -69,14 +70,17 @@ final class AppStore: ObservableObject {
     }
 
     func loadProduits() async {
-        do { produits = try await repo.selectAll(Produit.self, from: "produit", orderBy: "nom") }
-        catch { lastError = "produit: \(error.localizedDescription)" }
+        do {
+            produits = try await repo.selectAll(Produit.self, from: "produit", orderBy: "nom")
+            produitsMarges = try await repo.produitsMarges()
+        } catch { lastError = "produit: \(error.localizedDescription)" }
     }
 
     func loadMatieres() async {
         do {
             matieres = try await repo.selectAll(Matiere.self, from: "matiere", orderBy: "nom")
             matieresDisponibles = try await repo.matieresDisponibles()
+            produitsMarges = try await repo.produitsMarges()
         } catch { lastError = "matiere: \(error.localizedDescription)" }
     }
 

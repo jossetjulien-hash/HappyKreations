@@ -81,6 +81,7 @@ struct Matiere: Codable, Identifiable, Hashable {
     var unite: String
     var stock_actuel: Double
     var seuil_alerte: Double
+    var cout_unitaire: Double?
     var created_at: Date?
 
     static func new() -> Matiere {
@@ -88,14 +89,15 @@ struct Matiere: Codable, Identifiable, Hashable {
     }
 
     init(id: UUID, nom: String, unite: String, stock_actuel: Double,
-         seuil_alerte: Double, created_at: Date? = nil) {
+         seuil_alerte: Double, cout_unitaire: Double? = nil, created_at: Date? = nil) {
         self.id = id; self.nom = nom; self.unite = unite
         self.stock_actuel = stock_actuel; self.seuil_alerte = seuil_alerte
+        self.cout_unitaire = cout_unitaire
         self.created_at = created_at
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, nom, unite, stock_actuel, seuil_alerte, created_at
+        case id, nom, unite, stock_actuel, seuil_alerte, cout_unitaire, created_at
     }
 
     init(from decoder: Decoder) throws {
@@ -105,7 +107,38 @@ struct Matiere: Codable, Identifiable, Hashable {
         unite = try c.decode(String.self, forKey: .unite)
         stock_actuel = try c.decodeDouble(.stock_actuel)
         seuil_alerte = try c.decodeDouble(.seuil_alerte)
+        cout_unitaire = c.decodeDoubleIfPresent(.cout_unitaire)
         created_at = try c.decodeIfPresent(Date.self, forKey: .created_at)
+    }
+}
+
+/// Vue agrégée `v_produit_marge` : coût matière et marge d'un produit.
+struct ProduitMarge: Codable, Identifiable, Hashable {
+    var produit_id: UUID
+    var nom: String
+    var prix_vente: Double
+    var cout_matiere: Double
+    var marge: Double
+    var marge_pourcent: Double?
+    /// `true` si toutes les matières de la recette ont un coût renseigné ;
+    /// `nil` si le produit n'a pas de recette du tout.
+    var cout_complet: Bool?
+
+    var id: UUID { produit_id }
+
+    enum CodingKeys: String, CodingKey {
+        case produit_id, nom, prix_vente, cout_matiere, marge, marge_pourcent, cout_complet
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        produit_id = try c.decode(UUID.self, forKey: .produit_id)
+        nom = try c.decode(String.self, forKey: .nom)
+        prix_vente = try c.decodeDouble(.prix_vente)
+        cout_matiere = try c.decodeDouble(.cout_matiere)
+        marge = try c.decodeDouble(.marge)
+        marge_pourcent = c.decodeDoubleIfPresent(.marge_pourcent)
+        cout_complet = try c.decodeIfPresent(Bool.self, forKey: .cout_complet)
     }
 }
 

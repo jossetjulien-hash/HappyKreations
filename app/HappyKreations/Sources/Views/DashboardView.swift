@@ -128,7 +128,31 @@ struct DashboardView: View {
                  icon: "exclamationmark.triangle", tint: .orange)
             stat("En production", value: "\(enProductionCount)",
                  icon: "flame.fill", tint: .pink)
+            stat("Marge brute (mois)", value: margeMoisLabel,
+                 icon: "percent", tint: .mint)
         }
+    }
+
+    /// Marge brute du mois, pondérée par la part de chaque produit dans le CA.
+    /// Affiche "—" tant qu'aucune ligne du mois n'a de coût matière renseigné.
+    private var margeMoisLabel: String {
+        guard !lignesDuMois.isEmpty else { return "—" }
+        var ca: Double = 0, cout: Double = 0
+        var coutManquant = false
+        for l in lignesDuMois {
+            let revenue = Double(l.quantite) * l.prix_unitaire
+            ca += revenue
+            if let m = store.produitsMarges.first(where: { $0.produit_id == l.produit_id }),
+               m.cout_complet == true {
+                cout += m.cout_matiere * Double(l.quantite)
+            } else {
+                coutManquant = true
+            }
+        }
+        guard ca > 0 else { return "—" }
+        let pct = ((ca - cout) / ca) * 100
+        let pctTxt = pct.formatted(.number.precision(.fractionLength(0...1)))
+        return coutManquant ? "≈ \(pctTxt) %" : "\(pctTxt) %"
     }
 
     private func stat(_ title: String, value: String, icon: String, tint: Color) -> some View {

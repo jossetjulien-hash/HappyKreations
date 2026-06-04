@@ -42,6 +42,10 @@ struct Repository {
         try await client.from("v_matiere_disponible").select().execute().value
     }
 
+    func produitsMarges() async throws -> [ProduitMarge] {
+        try await client.from("v_produit_marge").select().execute().value
+    }
+
     func commandesAVenir(limit: Int = 50) async throws -> [Commande] {
         try await client.from("commande")
             .select()

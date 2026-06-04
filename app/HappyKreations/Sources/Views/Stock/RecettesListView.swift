@@ -149,6 +149,7 @@ struct RecetteEditView: View {
                     }
                 } label: { Label("Ajouter une matière", systemImage: "plus") }
             }
+            margeSection
         }
         .formStyle(.grouped)
         .navigationTitle(isNew ? "Nouveau produit" : draft.nom)
@@ -172,6 +173,48 @@ struct RecetteEditView: View {
         } message: { Text(errorText ?? "") }
     }
 
+    @ViewBuilder
+    private var margeSection: some View {
+        if !isNew, let marge = store.produitsMarges.first(where: { $0.produit_id == produitId }) {
+            Section("Marge") {
+                LabeledContent("Prix de vente") {
+                    Text(marge.prix_vente, format: .currency(code: "EUR"))
+                }
+                LabeledContent("Coût matière") {
+                    Text(marge.cout_matiere, format: .currency(code: "EUR"))
+                        .foregroundStyle(marge.cout_complet == true ? .secondary : .orange)
+                }
+                LabeledContent("Marge brute") {
+                    HStack(spacing: 8) {
+                        Text(marge.marge, format: .currency(code: "EUR"))
+                            .foregroundStyle(margeColor(marge))
+                            .fontWeight(.semibold)
+                        if let p = marge.marge_pourcent {
+                            Text("(\(p, format: .number.precision(.fractionLength(0...1))) %)")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                if marge.cout_complet != true && !lignes.isEmpty {
+                    Text("Certaines matières n'ont pas de coût renseigné — la marge est sous-estimée.")
+                        .font(.caption).foregroundStyle(.orange)
+                }
+                if lignes.isEmpty {
+                    Text("Renseigne la recette pour calculer la marge.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private func margeColor(_ m: ProduitMarge) -> Color {
+        guard let p = m.marge_pourcent else { return .primary }
+        if p >= 60 { return .green }
+        if p >= 40 { return .blue }
+        if p >= 20 { return .orange }
+        return .red
+    }
+
     private func load() async {
         if !isNew, let p = store.produits.first(where: { $0.id == produitId }) { draft = p }
         if !isNew {
@@ -192,6 +235,8 @@ struct RecetteEditView: View {
                 for l in lignes { _ = try await store.repo.upsert("recette_ligne", l) }
             }
             await store.loadProduits()
+            // Recharge la vue marges (les coûts dépendent des recettes modifiées).
+            await store.loadMatieres()
             if isNew && !silent { dismiss() }
         } catch { errorText = error.localizedDescription }
     }
