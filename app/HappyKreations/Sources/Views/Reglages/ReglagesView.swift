@@ -21,6 +21,7 @@ struct ReglagesView: View {
     @State private var selectedCalendarId: String = ""
     @State private var reminderSources: [RemindersService.SourceOption] = []
     @AppStorage(RemindersService.preferredSourceKey) private var preferredReminderSource: String = ""
+    @State private var anneeExport: Int = Calendar.current.component(.year, from: Date())
 
     var body: some View {
         Form {
@@ -144,10 +145,32 @@ struct ReglagesView: View {
                 }
             }
 
-            Section("Export") {
+            Section {
+                Picker("Année", selection: $anneeExport) {
+                    ForEach(anneesDisponibles, id: \.self) { y in
+                        Text("\(String(format: "%d", y))").tag(y)
+                    }
+                }
+                Button {
+                    exportComptableCSV()
+                } label: {
+                    Label("Registre des recettes (CSV)", systemImage: "tablecells")
+                }
+                Button {
+                    exportComptablePDF()
+                } label: {
+                    Label("Récap annuel (PDF)", systemImage: "doc.richtext")
+                }
+            } header: {
+                Text("Export comptable")
+            } footer: {
+                Text("CSV au format livre des recettes (date, référence, client, montant, règlement) à transmettre à votre comptable. Le PDF est un récap mensuel imprimable.")
+            }
+
+            Section("Autres exports") {
                 Button {
                     exportCSV()
-                } label: { Label("Exporter les commandes (CSV)", systemImage: "square.and.arrow.up") }
+                } label: { Label("Toutes les commandes (CSV)", systemImage: "square.and.arrow.up") }
             }
 
             Section("Projet Supabase") {
@@ -225,17 +248,59 @@ struct ReglagesView: View {
             let date = c.date_retrait.map { DateFormat.iso($0) } ?? ""
             csv += "\(c.id);\(client);\(date);\(c.statut.rawValue);\(c.total);\(c.acompte);\(c.canal.rawValue)\n"
         }
+        partager(contenu: csv, nomFichier: "commandes-\(DateFormat.iso(Date())).csv")
+    }
+
+    // MARK: - Export comptable
+
+    /// Années pour lesquelles on a au moins un paiement, par ordre décroissant.
+    /// Inclut toujours l'année en cours, même sans paiement.
+    private var anneesDisponibles: [Int] {
+        let cal = Calendar.current
+        let cetteAnnee = cal.component(.year, from: Date())
+        var set = Set<Int>([cetteAnnee])
+        for p in store.paiements where p.statut == .reussi {
+            set.insert(cal.component(.year, from: p.date))
+        }
+        return set.sorted(by: >)
+    }
+
+    private func exportComptableCSV() {
+        let recap = AccountingExport.build(annee: anneeExport, store: store)
+        let csv = AccountingExport.csv(recap)
+        partager(contenu: csv,
+                 nomFichier: "registre-recettes-\(anneeExport).csv")
+    }
+
+    private func exportComptablePDF() {
+        let recap = AccountingExport.build(annee: anneeExport, store: store)
+        guard let url = AccountingExport.generatePDF(
+            recap, nomAtelier: store.config["nom_atelier"] ?? "HappyKreations")
+        else {
+            errorText = "Génération du PDF impossible."
+            return
+        }
+        partagerFichier(url: url)
+    }
+
+    // MARK: - Partage cross-platform
+
+    private func partager(contenu: String, nomFichier: String) {
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(nomFichier)
+        try? contenu.write(to: tmp, atomically: true, encoding: .utf8)
+        partagerFichier(url: tmp)
+    }
+
+    private func partagerFichier(url: URL) {
         #if os(macOS)
         let panel = NSSavePanel()
-        panel.nameFieldStringValue = "commandes-\(DateFormat.iso(Date())).csv"
-        if panel.runModal() == .OK, let url = panel.url {
-            try? csv.write(to: url, atomically: true, encoding: .utf8)
+        panel.nameFieldStringValue = url.lastPathComponent
+        if panel.runModal() == .OK, let dest = panel.url {
+            try? FileManager.default.removeItem(at: dest)
+            try? FileManager.default.copyItem(at: url, to: dest)
         }
         #else
-        let tmp = FileManager.default.temporaryDirectory
-            .appendingPathComponent("commandes-\(DateFormat.iso(Date())).csv")
-        try? csv.write(to: tmp, atomically: true, encoding: .utf8)
-        let av = UIActivityViewController(activityItems: [tmp], applicationActivities: nil)
+        let av = UIActivityViewController(activityItems: [url], applicationActivities: nil)
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
         let rootVC = scenes.flatMap { $0.windows }.first { $0.isKeyWindow }?.rootViewController
         rootVC?.present(av, animated: true)
