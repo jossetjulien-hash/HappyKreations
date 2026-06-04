@@ -196,7 +196,10 @@ struct DashboardView: View {
     }
 
     private func ligneCommande(_ c: Commande, montrerDate: Bool) -> some View {
-        HStack {
+        HStack(spacing: 10) {
+            if c.photo_ref_url != nil {
+                CommandePhotoThumb(url: c.photo_ref_url, size: 44)
+            }
             VStack(alignment: .leading, spacing: 2) {
                 Text(store.client(id: c.client_id)?.nom ?? "Sans client").font(.subheadline).bold()
                 HStack(spacing: 6) {

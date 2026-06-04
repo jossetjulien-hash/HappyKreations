@@ -64,6 +64,9 @@ struct CommandeRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
+            if commande.photo_ref_url != nil {
+                CommandePhotoThumb(url: commande.photo_ref_url, size: 56)
+            }
             VStack(alignment: .leading, spacing: 4) {
                 Text(store.client(id: commande.client_id)?.nom ?? "Client inconnu")
                     .font(.headline)
