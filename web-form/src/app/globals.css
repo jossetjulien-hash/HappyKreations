@@ -578,6 +578,41 @@ footer-note { display: none; }
   margin: 0;
 }
 
+/* ----- Galerie Inspirations ----- */
+.inspirations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.inspiration-tile {
+  margin: 0;
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  background: var(--cream-deep);
+  aspect-ratio: 1;
+}
+.inspiration-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+.inspiration-tile:hover img { transform: scale(1.04); }
+.inspiration-tile figcaption {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 18px 12px 10px;
+  background: linear-gradient(to top, rgba(79,74,69,.7), transparent);
+  color: #fff;
+  font-family: var(--font-script);
+  font-size: 1.1rem;
+  text-align: center;
+  text-transform: capitalize;
+}
+
 /* ----- Témoignages ----- */
 .testimonials-grid {
   display: grid;

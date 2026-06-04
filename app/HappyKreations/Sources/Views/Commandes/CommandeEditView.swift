@@ -24,6 +24,8 @@ struct CommandeEditView: View {
     @State private var errorText: String?
     @State private var photoRefItem: PhotosPickerItem?
     @State private var photoRefUploading = false
+    @State private var photoResultatItem: PhotosPickerItem?
+    @State private var photoResultatUploading = false
     @State private var generationLien = false
     @State private var lienAPartager: URL?
     @State private var nouveauClient: Client?
@@ -45,6 +47,7 @@ struct CommandeEditView: View {
         Form {
             sectionInfos
             sectionPhotoRef
+            sectionPhotoResultat
             sectionPersonnalisation
             sectionLignes
             sectionTotaux
@@ -58,6 +61,10 @@ struct CommandeEditView: View {
         .onChange(of: photoRefItem) { _, item in
             guard let item else { return }
             Task { await uploadPhotoRef(item) }
+        }
+        .onChange(of: photoResultatItem) { _, item in
+            guard let item else { return }
+            Task { await uploadPhotoResultat(item) }
         }
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
@@ -154,6 +161,43 @@ struct CommandeEditView: View {
             Text("Photo de référence")
         } footer: {
             Text("Photo « comme ce style » envoyée par le client ou prise par vous, visible aussi sur la feuille de production.")
+        }
+    }
+
+    private var sectionPhotoResultat: some View {
+        Section {
+            HStack(spacing: 14) {
+                PhotoRefThumb(url: draft.photo_resultat_url, size: 88)
+                VStack(alignment: .leading, spacing: 6) {
+                    PhotosPicker(selection: $photoResultatItem,
+                                 matching: .images,
+                                 photoLibrary: .shared()) {
+                        Label(draft.photo_resultat_url == nil
+                              ? "Ajouter la photo finale"
+                              : "Remplacer la photo",
+                              systemImage: "checkmark.seal.fill")
+                    }
+                    .disabled(photoResultatUploading || isNew)
+                    if isNew {
+                        Text("Enregistre d'abord la commande pour pouvoir ajouter la photo du résultat.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    if photoResultatUploading {
+                        ProgressView().controlSize(.small)
+                    }
+                    if draft.photo_resultat_url != nil && !photoResultatUploading && !isNew {
+                        Button(role: .destructive) {
+                            draft.photo_resultat_url = nil
+                            Task { await save() }
+                        } label: { Label("Supprimer", systemImage: "trash") }
+                            .font(.caption)
+                    }
+                }
+            }
+        } header: {
+            Text("Photo après production")
+        } footer: {
+            Text("Photo du résultat fini, visible dans l'historique du client et affichée automatiquement dans la galerie « Inspirations » de votre site.")
         }
     }
 
@@ -427,6 +471,20 @@ struct CommandeEditView: View {
             let url = try await store.repo.uploadPhotoCommande(
                 commande: commandeId, data: payload, ext: ext)
             draft.photo_ref_url = url
+            _ = try await store.repo.update("commande", draft, id: draft.id)
+            await store.loadCommandes()
+        } catch { errorText = error.localizedDescription }
+    }
+
+    private func uploadPhotoResultat(_ item: PhotosPickerItem) async {
+        photoResultatUploading = true
+        defer { photoResultatUploading = false; photoResultatItem = nil }
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else { return }
+            let (payload, ext) = compressedJPEG(data) ?? (data, "jpg")
+            let url = try await store.repo.uploadPhotoResultat(
+                commande: commandeId, data: payload, ext: ext)
+            draft.photo_resultat_url = url
             _ = try await store.repo.update("commande", draft, id: draft.id)
             await store.loadCommandes()
         } catch { errorText = error.localizedDescription }

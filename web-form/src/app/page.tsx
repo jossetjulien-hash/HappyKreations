@@ -33,9 +33,26 @@ async function getTemoignages(): Promise<Temoignage[]> {
   return (data as Temoignage[] | null) ?? [];
 }
 
+interface Inspiration {
+  id: string;
+  photo_resultat_url: string;
+  type_evenement: string | null;
+  date_retrait: string | null;
+}
+
+async function getInspirations(): Promise<Inspiration[]> {
+  const { data } = await supabase
+    .from("v_inspirations")
+    .select("id, photo_resultat_url, type_evenement, date_retrait")
+    .order("date_retrait", { ascending: false })
+    .limit(12);
+  return (data as Inspiration[] | null) ?? [];
+}
+
 export default async function HomePage() {
   const produits = await getProduits();
   const temoignages = await getTemoignages();
+  const inspirations = await getInspirations();
   const produitsAvecPhoto = produits.filter((p) => p.photo_url);
   const galerie = produitsAvecPhoto.length > 0 ? produitsAvecPhoto : produits;
 
@@ -116,6 +133,25 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {inspirations.length > 0 && (
+        <section className="inspirations">
+          <h2><span className="step">✿</span> Inspirations</h2>
+          <p className="muted">Quelques créations imaginées récemment pour des événements faits avec amour.</p>
+          <div className="inspirations-grid">
+            {inspirations.map((i) => (
+              <figure key={i.id} className="inspiration-tile">
+                <img src={i.photo_resultat_url}
+                     alt={i.type_evenement ? `Création ${i.type_evenement}` : "Création artisanale"}
+                     loading="lazy" />
+                {i.type_evenement && (
+                  <figcaption>{i.type_evenement}</figcaption>
+                )}
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
 
       {temoignages.length > 0 && (
         <section className="testimonials">

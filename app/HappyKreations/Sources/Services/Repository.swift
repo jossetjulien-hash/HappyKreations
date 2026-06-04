@@ -106,6 +106,12 @@ struct Repository {
         try await uploadPhoto(bucket: "commandes-refs", id: id, data: data, ext: ext)
     }
 
+    /// Upload la photo « après production » du résultat fini. Bucket
+    /// `commandes-resultats`, public — alimente la galerie Inspirations du site.
+    func uploadPhotoResultat(commande id: UUID, data: Data, ext: String) async throws -> String {
+        try await uploadPhoto(bucket: "commandes-resultats", id: id, data: data, ext: ext)
+    }
+
     private func uploadPhoto(bucket name: String, id: UUID, data: Data, ext: String) async throws -> String {
         let path = "\(id.uuidString.lowercased()).\(ext.lowercased())"
         let bucket = client.storage.from(name)

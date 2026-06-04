@@ -252,6 +252,7 @@ struct Commande: Codable, Identifiable, Hashable {
     var message_gravure: String?
     var couleur: String?
     var photo_ref_url: String?
+    var photo_resultat_url: String?
     var numero_facture: String?
     var rappel_envoye_at: Date?
     var email_confirmation_ouvert_at: Date?
@@ -284,7 +285,7 @@ struct Commande: Codable, Identifiable, Hashable {
     enum CodingKeys: String, CodingKey {
         case id, client_id, canal, type_evenement, date_evenement, date_retrait,
              statut, total, acompte, notes, allergies, message_gravure, couleur,
-             photo_ref_url, numero_facture, rappel_envoye_at,
+             photo_ref_url, photo_resultat_url, numero_facture, rappel_envoye_at,
              email_confirmation_ouvert_at, email_rappel_ouvert_at,
              created_by, created_at, updated_at
     }
@@ -305,6 +306,7 @@ struct Commande: Codable, Identifiable, Hashable {
         message_gravure = try c.decodeIfPresent(String.self, forKey: .message_gravure)
         couleur = try c.decodeIfPresent(String.self, forKey: .couleur)
         photo_ref_url = try c.decodeIfPresent(String.self, forKey: .photo_ref_url)
+        photo_resultat_url = try c.decodeIfPresent(String.self, forKey: .photo_resultat_url)
         numero_facture = try c.decodeIfPresent(String.self, forKey: .numero_facture)
         rappel_envoye_at = try c.decodeIfPresent(Date.self, forKey: .rappel_envoye_at)
         email_confirmation_ouvert_at = try c.decodeIfPresent(Date.self, forKey: .email_confirmation_ouvert_at)
