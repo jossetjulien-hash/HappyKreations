@@ -19,6 +19,8 @@ struct ReglagesView: View {
     @State private var bloque = false
     @State private var calendarChoices: [EKCalendar] = []
     @State private var selectedCalendarId: String = ""
+    @State private var reminderSources: [RemindersService.SourceOption] = []
+    @AppStorage(RemindersService.preferredSourceKey) private var preferredReminderSource: String = ""
 
     var body: some View {
         Form {
@@ -80,6 +82,24 @@ struct ReglagesView: View {
                 Text("Les commandes apparaîtront comme événements toute la journée à la date de retrait. Via iCloud, elles seront visibles sur tous tes appareils Apple sans configuration supplémentaire.")
             }
 
+            Section {
+                if reminderSources.isEmpty {
+                    Text("Aucun compte de rappels disponible.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    Picker("Compte", selection: $preferredReminderSource) {
+                        Text("Automatique (préfère iCloud)").tag("")
+                        ForEach(reminderSources) { s in
+                            Text(s.title).tag(s.id)
+                        }
+                    }
+                }
+            } header: {
+                Text("Rappels")
+            } footer: {
+                Text("Les rappels créés par l'app (ex. \"Commander chez le fournisseur X\") iront dans le compte choisi. « Automatique » sélectionne ton compte iCloud personnel quand il est disponible.")
+            }
+
             Section("Paramètres globaux") {
                 HStack {
                     Text("% d'acompte")
@@ -139,6 +159,7 @@ struct ReglagesView: View {
         .task {
             restaurer()
             await chargerCalendriers()
+            await chargerSourcesRappels()
         }
         .onChange(of: store.config) { _, _ in restaurer() }
         .alert("Erreur", isPresented: .init(get: { errorText != nil }, set: { _ in errorText = nil })) {
@@ -165,6 +186,13 @@ struct ReglagesView: View {
                 ?? CalendarService.shared.defaultCalendar?.calendarIdentifier
                 ?? calendarChoices.first?.calendarIdentifier ?? ""
         }
+    }
+
+    private func chargerSourcesRappels() async {
+        if !RemindersService.shared.hasAccess {
+            _ = await RemindersService.shared.requestAccess()
+        }
+        reminderSources = RemindersService.shared.availableSources()
     }
 
     private func activerSync() async {
