@@ -1,0 +1,48 @@
+happykreations — Déclinaisons du logo pour l'application
+=========================================================
+
+Tous les logos sont fournis en SVG (vectoriel, texte déjà converti en
+tracés : aucune police à installer) et en PNG. Couleurs de la charte.
+
+DOSSIERS
+  /svg ........ versions vectorielles, à privilégier dans le code
+  /png ........ exports bitmap prêts à l'emploi
+  favicon.ico . icône multi-tailles pour navigateur (16/32/48/64)
+
+ICÔNE D'APPLICATION
+  Variante principale : app-icon-rose (fond rose poudré, monogramme crème).
+  Alternatives : creme, sauge, encre.
+  Les fichiers sont en plein cadre (carré) — le masque arrondi est appliqué
+  automatiquement par iOS/Android. Le motif reste dans la zone centrale de
+  sécurité (~66%), compatible avec les icônes adaptatives Android.
+
+  iOS
+    apple-touch-icon.png ........ 180×180 (Safari / écran d'accueil)
+    app-icon-rose-1024.png ...... 1024×1024 (App Store / Asset Catalog)
+  Android
+    icon-maskable-512.png ....... 512×512 (icône adaptative / Play Store)
+    app-icon-rose-192.png ....... 192×192 (mdpi→xxxhdpi via mipmap)
+  Web / PWA
+    favicon.ico, favicon-32.png, favicon-16.png
+    app-icon-rose-512.png ....... manifest PWA
+
+LOGOTYPE (mot-symbole « happykreations »)
+  logotype-couleur ... encre + rose (fonds clairs)
+  logotype-encre ..... monochrome foncé
+  logotype-blanc ..... crème, pour fonds foncés / colorés
+  -> écrans de connexion, en-têtes, splash screen.
+
+MONOGRAMME (« hk » + branche d'eucalyptus, cerclé)
+  monogramme-couleur / -encre / -blanc
+  -> avatar, badge, favicon riche, filigrane.
+
+CONSEILS
+  • Préférer les SVG dans l'app : nets à toutes les résolutions.
+  • Splash screen : logotype-blanc ou monogramme-blanc sur fond rose/sauge.
+  • Garder autour du logo une marge ≥ hauteur du « h ».
+  • Ne pas déformer, incliner, ni recolorer hors palette.
+
+PALETTE
+  Rose poudré #E7B5B8   Rose profond #C9888C   Vert sauge #A9BCA1
+  Sauge foncé #7E947A   Pêche #F4D2B0          Crème #FBF6EF
+  Encre douce #4F4A45
