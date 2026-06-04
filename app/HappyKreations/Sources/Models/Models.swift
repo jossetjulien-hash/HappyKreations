@@ -494,6 +494,22 @@ struct ExtractionPayload: Codable, Hashable {
     var notes: String?
 }
 
+// MARK: - Témoignage
+
+struct Temoignage: Codable, Identifiable, Hashable {
+    var id: UUID
+    var auteur: String
+    var texte: String
+    var evenement: String?
+    var visible: Bool
+    var ordre: Int
+    var created_at: Date?
+
+    static func new() -> Temoignage {
+        Temoignage(id: UUID(), auteur: "", texte: "", evenement: nil, visible: true, ordre: 0)
+    }
+}
+
 // MARK: - Capacité & Config
 
 struct CapaciteJour: Codable, Identifiable, Hashable {

@@ -16,6 +16,7 @@ final class AppStore: ObservableObject {
     @Published var fournisseurs: [Fournisseur] = []
     @Published var bonsReappro: [BonReappro] = []
     @Published var capacites: [CapaciteJour] = []
+    @Published var temoignages: [Temoignage] = []
     @Published var config: [String: String] = [:]
 
     @Published var lastError: String?
@@ -54,7 +55,15 @@ final class AppStore: ObservableObject {
         async let b: () = loadBons()
         async let k: () = loadCapacites()
         async let cf: () = loadConfig()
-        _ = await (c, p, m, co, pa, f, b, k, cf)
+        async let t: () = loadTemoignages()
+        _ = await (c, p, m, co, pa, f, b, k, cf, t)
+    }
+
+    func loadTemoignages() async {
+        do {
+            temoignages = try await repo.selectAll(Temoignage.self, from: "temoignage",
+                                                   orderBy: "ordre")
+        } catch { lastError = "temoignage: \(error.localizedDescription)" }
     }
 
     func loadPaiements() async {

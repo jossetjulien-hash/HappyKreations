@@ -16,8 +16,26 @@ async function getProduits(): Promise<Produit[]> {
   return (data as Produit[] | null) ?? [];
 }
 
+interface Temoignage {
+  id: string;
+  auteur: string;
+  texte: string;
+  evenement: string | null;
+  ordre: number;
+}
+
+async function getTemoignages(): Promise<Temoignage[]> {
+  const { data } = await supabase
+    .from("temoignage")
+    .select("id, auteur, texte, evenement, ordre")
+    .eq("visible", true)
+    .order("ordre");
+  return (data as Temoignage[] | null) ?? [];
+}
+
 export default async function HomePage() {
   const produits = await getProduits();
+  const temoignages = await getTemoignages();
   const produitsAvecPhoto = produits.filter((p) => p.photo_url);
   const galerie = produitsAvecPhoto.length > 0 ? produitsAvecPhoto : produits;
 
@@ -98,6 +116,23 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {temoignages.length > 0 && (
+        <section className="testimonials">
+          <h2><span className="step">✿</span> Ils en parlent</h2>
+          <div className="testimonials-grid">
+            {temoignages.map((t) => (
+              <figure key={t.id} className="testimonial">
+                <blockquote>« {t.texte} »</blockquote>
+                <figcaption>
+                  <strong>{t.auteur}</strong>
+                  {t.evenement && <span> · {t.evenement}</span>}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="cta-bottom">
         <h2>Prêt·e à composer votre commande&nbsp;?</h2>
