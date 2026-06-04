@@ -90,6 +90,16 @@ body::before {
   color: var(--sage-deep);
   line-height: 1.1;
 }
+.back-home {
+  display: inline-block;
+  margin-bottom: 18px;
+  font-size: 0.82rem;
+  color: var(--sage-deep);
+  text-decoration: none;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.back-home:hover { color: var(--rose-deep); }
 
 h1, h2, h3 {
   font-family: var(--font-title);
@@ -316,3 +326,218 @@ button.secondary {
 .summary h2 .step { color: var(--sage-deep); }
 
 footer-note { display: none; }
+
+/* =========================================================================
+   PAGE D'ACCUEIL  (/)
+   ========================================================================= */
+.home {
+  position: relative;
+  z-index: 1;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+.home-brand {
+  text-align: center;
+  margin-bottom: 12px;
+}
+.home-brand .sprig { width: 48px; margin-bottom: 4px; }
+
+.logotype.small { font-size: 1.6rem; }
+
+/* ----- HERO ----- */
+.hero {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 30px;
+  align-items: center;
+  padding: 48px 0 64px;
+}
+.hero h1 {
+  font-family: var(--font-title);
+  font-weight: 300;
+  font-size: clamp(2rem, 5.4vw, 3rem);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  margin: 0 0 14px;
+}
+.hero h1 .ital { font-style: italic; color: var(--rose-deep); }
+.hero h1 .script {
+  font-family: var(--font-script);
+  font-weight: 600;
+  font-size: 1.3em;
+  color: var(--rose-deep);
+  line-height: 0.9;
+}
+.hero .lede {
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+  max-width: 480px;
+  margin: 0 0 24px;
+}
+.cta {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 700;
+  padding: 14px 28px;
+  background: var(--rose-deep);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 999px;
+  font-size: 1.02rem;
+  transition: filter 0.15s, transform 0.05s;
+}
+.cta:hover { filter: brightness(1.05); }
+.cta:active { transform: translateY(1px); }
+
+.hero-meta {
+  margin-top: 14px;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+}
+
+.hero-illus { display: flex; justify-content: center; }
+.hero-illus svg { width: 100%; max-width: 240px; height: auto; }
+
+/* ----- Sections génériques ----- */
+.home section { margin: 0 0 56px; }
+.home h2 {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(1.6rem, 3.6vw, 2.1rem);
+  margin: 0 0 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.home h2 .step {
+  font-family: var(--font-script);
+  font-size: 1.5rem;
+  color: var(--sage-deep);
+}
+.home section > .muted { margin: 0 0 24px; }
+
+/* ----- Galerie produits ----- */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 18px;
+}
+.produit-tile {
+  background: #fff;
+  border: 1px solid var(--hair);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: transform 0.15s;
+}
+.produit-tile:hover { transform: translateY(-2px); }
+.produit-tile img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
+}
+.produit-tile-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  background: var(--cream-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+}
+.produit-tile-info {
+  padding: 12px 14px 16px;
+}
+.produit-tile-info strong {
+  display: block;
+  font-family: var(--font-title);
+  font-weight: 500;
+  font-size: 1.02rem;
+  margin-bottom: 4px;
+}
+.produit-tile-info span {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+/* ----- Étapes ----- */
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+.step-card {
+  background: var(--cream);
+  border: 1px solid var(--hair);
+  border-radius: 20px;
+  padding: 26px 22px;
+  position: relative;
+}
+.step-card .step-num {
+  position: absolute;
+  top: -16px;
+  left: 22px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--rose);
+  color: #fff;
+  font-family: var(--font-title);
+  font-weight: 500;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px -8px rgba(201, 131, 136, 0.6);
+}
+.step-card h3 {
+  font-family: var(--font-title);
+  font-weight: 500;
+  font-size: 1.2rem;
+  margin: 8px 0 8px;
+}
+.step-card p {
+  font-size: 0.94rem;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ----- CTA bottom ----- */
+.cta-bottom {
+  background: var(--cream-deep);
+  border: 1px solid var(--peach);
+  border-radius: 22px;
+  padding: 40px 28px;
+  text-align: center;
+}
+.cta-bottom h2 {
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+/* ----- Footer ----- */
+.home-footer {
+  text-align: center;
+  padding-top: 36px;
+  border-top: 1px solid var(--hair);
+}
+.home-footer .muted {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  margin-top: 6px;
+}
+
+@media (max-width: 760px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 24px 0 36px;
+    gap: 12px;
+  }
+  .hero-illus { display: none; }
+  .cta-bottom { padding: 30px 18px; }
+}

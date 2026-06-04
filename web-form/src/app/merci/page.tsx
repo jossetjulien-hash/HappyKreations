@@ -10,7 +10,7 @@ export default function Merci() {
         <p>Votre acompte a bien été reçu. Vous recevrez une confirmation par email sous peu.</p>
         <p className="muted">Nous vous recontactons rapidement pour finaliser les petits détails avec soin.</p>
         <a href="/" style={{ color: "var(--accent)", display: "inline-block", marginTop: 20, fontWeight: 700 }}>
-          Retour à la page de commande
+          Retour à l'accueil
         </a>
       </div>
     </div>
