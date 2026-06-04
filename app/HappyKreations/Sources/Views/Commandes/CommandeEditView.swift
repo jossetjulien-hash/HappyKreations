@@ -1,5 +1,10 @@
 import SwiftUI
 import PhotosUI
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
 struct CommandeEditView: View {
     @EnvironmentObject var store: AppStore
@@ -36,6 +41,7 @@ struct CommandeEditView: View {
             sectionTotaux
             sectionPaiements
             sectionStatut
+            sectionDocuments
         }
         .formStyle(.grouped)
         .navigationTitle(isNew ? "Nouvelle commande" : "Commande")
@@ -200,6 +206,33 @@ struct CommandeEditView: View {
         }
     }
 
+    private var sectionDocuments: some View {
+        Section {
+            if let n = draft.numero_facture {
+                LabeledContent("Facture", value: n)
+            } else {
+                Text("Le numéro de facture sera attribué automatiquement quand l'acompte sera reçu.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Button {
+                Task { await partagerFacturePDF() }
+            } label: {
+                Label("Facture PDF", systemImage: "doc.richtext")
+            }
+            .disabled(isNew)
+            Button {
+                Task { await partagerEtiquettesPDF() }
+            } label: {
+                Label("Étiquettes à coller", systemImage: "tag")
+            }
+            .disabled(isNew || lignes.isEmpty)
+        } header: {
+            Text("Documents")
+        } footer: {
+            Text("La facture est numérotée séquentiellement (F\(Calendar.current.component(.year, from: Date()))-001…). Une étiquette est générée par unité commandée.")
+        }
+    }
+
     private var sectionStatut: some View {
         Section("Statut") {
             Picker("Statut", selection: $draft.statut) {
@@ -324,6 +357,57 @@ struct CommandeEditView: View {
         }
         #endif
         return nil
+    }
+
+    // MARK: - Export PDF (facture / étiquettes)
+
+    @MainActor
+    private func partagerFacturePDF() async {
+        let atelier = CommandeExport.Atelier.from(config: store.config)
+        guard let url = CommandeExport.generateFacturePDF(
+            commande: draft,
+            client: store.client(id: draft.client_id),
+            lignes: lignes,
+            produit: { store.produit(id: $0) },
+            atelier: atelier,
+            encaisse: encaisse
+        ) else {
+            errorText = "Génération du PDF impossible."
+            return
+        }
+        partagerFichier(url)
+    }
+
+    @MainActor
+    private func partagerEtiquettesPDF() async {
+        let atelier = CommandeExport.Atelier.from(config: store.config)
+        guard let url = CommandeExport.generateEtiquettesPDF(
+            commande: draft,
+            client: store.client(id: draft.client_id),
+            lignes: lignes,
+            produit: { store.produit(id: $0) },
+            atelier: atelier
+        ) else {
+            errorText = "Aucune ligne dans la commande."
+            return
+        }
+        partagerFichier(url)
+    }
+
+    private func partagerFichier(_ url: URL) {
+        #if os(macOS)
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = url.lastPathComponent
+        if panel.runModal() == .OK, let dest = panel.url {
+            try? FileManager.default.removeItem(at: dest)
+            try? FileManager.default.copyItem(at: url, to: dest)
+        }
+        #else
+        let av = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let rootVC = scenes.flatMap { $0.windows }.first { $0.isKeyWindow }?.rootViewController
+        rootVC?.present(av, animated: true)
+        #endif
     }
 }
 

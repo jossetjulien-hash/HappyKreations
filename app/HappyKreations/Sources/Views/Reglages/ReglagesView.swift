@@ -14,6 +14,10 @@ struct ReglagesView: View {
     @State private var acomptePourcent: String = "30"
     @State private var delaiMini: String = "7"
     @State private var nomAtelier: String = "HappyKreations"
+    @State private var adresseAtelier: String = ""
+    @State private var siretAtelier: String = ""
+    @State private var emailAtelier: String = ""
+    @State private var telephoneAtelier: String = ""
     @State private var errorText: String?
     @State private var dateCapacite = Date()
     @State private var plafond: Int = 10
@@ -142,6 +146,30 @@ struct ReglagesView: View {
                 Button("Enregistrer les paramètres") { Task { await sauverConfig() } }
             }
 
+            Section {
+                TextField("Adresse postale", text: $adresseAtelier, axis: .vertical)
+                    .lineLimit(2...4)
+                TextField("SIRET", text: $siretAtelier)
+                    #if os(iOS)
+                    .keyboardType(.numberPad)
+                    #endif
+                TextField("Email", text: $emailAtelier)
+                    #if os(iOS)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    #endif
+                TextField("Téléphone", text: $telephoneAtelier)
+                    #if os(iOS)
+                    .keyboardType(.phonePad)
+                    #endif
+                Button("Enregistrer l'identité") { Task { await sauverConfig() } }
+            } header: {
+                Text("Identité entreprise")
+            } footer: {
+                Text("Ces informations apparaissent sur les factures PDF. Le SIRET et la mention micro-entreprise sont obligatoires sur les documents commerciaux.")
+            }
+
             Section("Capacité / jours bloqués") {
                 DatePicker("Date", selection: $dateCapacite, displayedComponents: .date)
                 Stepper("Plafond unités : \(plafond)", value: $plafond, in: 0...500)
@@ -211,6 +239,10 @@ struct ReglagesView: View {
         acomptePourcent = store.config["acompte_pourcent"] ?? "30"
         delaiMini = store.config["delai_mini_jours"] ?? "7"
         nomAtelier = store.config["nom_atelier"] ?? "HappyKreations"
+        adresseAtelier = store.config["adresse_atelier"] ?? ""
+        siretAtelier = store.config["siret_atelier"] ?? ""
+        emailAtelier = store.config["email_atelier"] ?? ""
+        telephoneAtelier = store.config["telephone_atelier"] ?? ""
     }
 
     private func chargerCalendriers() async {
@@ -245,6 +277,10 @@ struct ReglagesView: View {
             try await store.repo.setConfig(cle: "acompte_pourcent", valeur: acomptePourcent)
             try await store.repo.setConfig(cle: "delai_mini_jours", valeur: delaiMini)
             try await store.repo.setConfig(cle: "nom_atelier", valeur: nomAtelier)
+            try await store.repo.setConfig(cle: "adresse_atelier", valeur: adresseAtelier)
+            try await store.repo.setConfig(cle: "siret_atelier", valeur: siretAtelier)
+            try await store.repo.setConfig(cle: "email_atelier", valeur: emailAtelier)
+            try await store.repo.setConfig(cle: "telephone_atelier", valeur: telephoneAtelier)
             await store.loadConfig()
         } catch { errorText = error.localizedDescription }
     }
