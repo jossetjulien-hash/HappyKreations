@@ -529,6 +529,77 @@ struct ExtractionPayload: Codable, Hashable {
     var notes: String?
 }
 
+// MARK: - Code promo
+
+struct CodePromo: Codable, Identifiable, Hashable {
+    var id: UUID
+    var code: String
+    var type: String           // "pourcent" ou "fixe"
+    var valeur: Double
+    var date_debut: Date
+    var date_fin: Date
+    var max_utilisations: Int?
+    var utilisations: Int
+    var actif: Bool
+    var description: String?
+    var created_at: Date?
+
+    static func new() -> CodePromo {
+        let now = Date()
+        let demain = Calendar.current.date(byAdding: .day, value: 7, to: now) ?? now
+        return CodePromo(
+            id: UUID(), code: "", type: "pourcent", valeur: 10,
+            date_debut: now, date_fin: demain,
+            max_utilisations: nil, utilisations: 0, actif: true)
+    }
+
+    init(id: UUID, code: String, type: String, valeur: Double,
+         date_debut: Date, date_fin: Date,
+         max_utilisations: Int? = nil, utilisations: Int = 0,
+         actif: Bool = true, description: String? = nil,
+         created_at: Date? = nil) {
+        self.id = id; self.code = code; self.type = type; self.valeur = valeur
+        self.date_debut = date_debut; self.date_fin = date_fin
+        self.max_utilisations = max_utilisations
+        self.utilisations = utilisations
+        self.actif = actif; self.description = description
+        self.created_at = created_at
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, code, type, valeur, date_debut, date_fin,
+             max_utilisations, utilisations, actif, description, created_at
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        code = try c.decode(String.self, forKey: .code)
+        type = try c.decode(String.self, forKey: .type)
+        valeur = try c.decodeDouble(.valeur)
+        date_debut = try c.decode(Date.self, forKey: .date_debut)
+        date_fin = try c.decode(Date.self, forKey: .date_fin)
+        max_utilisations = try c.decodeIfPresent(Int.self, forKey: .max_utilisations)
+        utilisations = try c.decode(Int.self, forKey: .utilisations)
+        actif = try c.decode(Bool.self, forKey: .actif)
+        description = try c.decodeIfPresent(String.self, forKey: .description)
+        created_at = try c.decodeIfPresent(Date.self, forKey: .created_at)
+    }
+
+    var libelleReduction: String {
+        if type == "fixe" {
+            return valeur.formatted(.currency(code: "EUR"))
+        }
+        return "\(Int(valeur)) %"
+    }
+
+    var estValideMaintenant: Bool {
+        let n = Date()
+        return actif && n >= date_debut && n <= date_fin
+            && (max_utilisations == nil || utilisations < (max_utilisations ?? Int.max))
+    }
+}
+
 // MARK: - Témoignage
 
 struct Temoignage: Codable, Identifiable, Hashable {

@@ -2,7 +2,7 @@ import SwiftUI
 import CoreSpotlight
 
 enum AppSection: String, CaseIterable, Identifiable {
-    case dashboard, commandes, inbox, agenda, stock, recettes, fournisseurs, clients, stats, temoignages, reglages
+    case dashboard, commandes, inbox, agenda, stock, recettes, fournisseurs, clients, stats, codesPromo, temoignages, reglages
     var id: String { rawValue }
 
     var label: String {
@@ -16,6 +16,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .fournisseurs: return "Fournisseurs"
         case .clients:      return "Clients"
         case .stats:        return "Statistiques"
+        case .codesPromo:   return "Codes promo"
         case .temoignages:  return "Témoignages"
         case .reglages:     return "Réglages"
         }
@@ -32,6 +33,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .fournisseurs: return "person.2"
         case .clients:      return "person.crop.circle"
         case .stats:        return "chart.bar.xaxis"
+        case .codesPromo:   return "tag.fill"
         case .temoignages:  return "quote.bubble"
         case .reglages:     return "gearshape"
         }
@@ -119,7 +121,7 @@ struct RootView: View {
     }
 
     private let primaryTabs: [AppSection] = [.dashboard, .commandes, .inbox, .agenda]
-    private let secondaryTabs: [AppSection] = [.stock, .recettes, .fournisseurs, .clients, .stats, .temoignages, .reglages]
+    private let secondaryTabs: [AppSection] = [.stock, .recettes, .fournisseurs, .clients, .stats, .codesPromo, .temoignages, .reglages]
 
     @ViewBuilder
     private func sectionView(_ section: AppSection) -> some View {
@@ -133,6 +135,7 @@ struct RootView: View {
         case .fournisseurs: FournisseursListView()
         case .clients:      ClientsListView()
         case .stats:        StatsView()
+        case .codesPromo:   CodesPromoView()
         case .temoignages:  TemoignagesListView()
         case .reglages:     ReglagesView()
         }

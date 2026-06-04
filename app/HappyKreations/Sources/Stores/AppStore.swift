@@ -17,6 +17,7 @@ final class AppStore: ObservableObject {
     @Published var bonsReappro: [BonReappro] = []
     @Published var capacites: [CapaciteJour] = []
     @Published var commandesEntrantes: [CommandeEntrante] = []
+    @Published var codesPromo: [CodePromo] = []
     @Published var temoignages: [Temoignage] = []
     @Published var config: [String: String] = [:]
 
@@ -60,7 +61,8 @@ final class AppStore: ObservableObject {
         async let cf: () = loadConfig()
         async let t: () = loadTemoignages()
         async let e: () = loadEntrantes()
-        _ = await (c, p, m, co, pa, f, b, k, cf, t, e)
+        async let cp: () = loadCodesPromo()
+        _ = await (c, p, m, co, pa, f, b, k, cf, t, e, cp)
         // Indexation Spotlight des données fraîchement chargées.
         await SpotlightIndexer.reindex(store: self)
         // Pousse les retraits du jour vers le widget.
@@ -80,6 +82,14 @@ final class AppStore: ObservableObject {
                 CommandeEntrante.self, from: "commande_entrante",
                 orderBy: "recu_le", ascending: false)
         } catch { lastError = "commande_entrante: \(error.localizedDescription)" }
+    }
+
+    func loadCodesPromo() async {
+        do {
+            codesPromo = try await repo.selectAll(
+                CodePromo.self, from: "code_promo",
+                orderBy: "date_fin", ascending: false)
+        } catch { lastError = "code_promo: \(error.localizedDescription)" }
     }
 
     func loadPaiements() async {

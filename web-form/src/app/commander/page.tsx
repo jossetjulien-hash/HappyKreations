@@ -24,8 +24,40 @@ export default function Page() {
   const [photoRef, setPhotoRef] = useState<File | null>(null);
   const [photoRefPreview, setPhotoRefPreview] = useState<string | null>(null);
   const [client, setClient] = useState<ClientInfo>({ nom: "" });
+  const [codeInput, setCodeInput] = useState("");
+  const [codeApplique, setCodeApplique] = useState<{ id: string; type: string; valeur: number; libelle: string } | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [verifCode, setVerifCode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function appliquerCode() {
+    const c = codeInput.trim().toUpperCase();
+    if (!c) return;
+    setVerifCode(true); setCodeError(null);
+    try {
+      // La policy anon_code_promo_valider filtre déjà actif + dates +
+      // utilisations : si on récupère une ligne, c'est qu'il est valide.
+      const { data, error } = await supabase
+        .from("code_promo")
+        .select("id, type, valeur")
+        .ilike("code", c)
+        .maybeSingle();
+      if (error || !data) {
+        setCodeError("Code invalide ou expiré.");
+        setCodeApplique(null);
+      } else {
+        const lib = data.type === "fixe"
+          ? `${Number(data.valeur).toFixed(2).replace(".", ",")} €`
+          : `${Math.round(Number(data.valeur))} %`;
+        setCodeApplique({ id: data.id, type: data.type, valeur: Number(data.valeur), libelle: lib });
+      }
+    } catch {
+      setCodeError("Vérification impossible.");
+    } finally {
+      setVerifCode(false);
+    }
+  }
 
   function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
@@ -89,10 +121,16 @@ export default function Page() {
     .filter(([, v]) => v.qte > 0)
     .map(([produit_id, v]) => ({ produit_id, quantite: v.qte, declinaison: v.decli }));
 
-  const total = lignes.reduce((s, l) => {
+  const totalBrut = lignes.reduce((s, l) => {
     const p = produits.find((pp) => pp.id === l.produit_id);
     return s + (p?.prix_vente ?? 0) * l.quantite;
   }, 0);
+  const remise = codeApplique
+    ? (codeApplique.type === "fixe"
+        ? Math.min(codeApplique.valeur, totalBrut)
+        : Math.round(totalBrut * codeApplique.valeur) / 100)
+    : 0;
+  const total = Math.max(0, totalBrut - remise);
   const acompte = Math.round(total * acomptePourcent) / 100;
 
   function setQte(p: Produit, delta: number) {
@@ -133,6 +171,7 @@ export default function Page() {
           message_gravure: messageGravure || null,
           couleur: couleur || null,
           photo_ref_url: photoUrl,
+          code_promo_id: codeApplique?.id ?? null,
           origin: window.location.origin,
         }),
       });
@@ -294,7 +333,44 @@ export default function Page() {
 
       <section className="card summary">
         <h2><span className="step">✿</span> Récapitulatif</h2>
-        <p>Total : <strong>{total.toFixed(2)} €</strong></p>
+
+        {codeApplique ? (
+          <p>Sous-total : <strong>{totalBrut.toFixed(2)} €</strong></p>
+        ) : (
+          <p>Total : <strong>{total.toFixed(2)} €</strong></p>
+        )}
+
+        {/* Code promo */}
+        <label style={{ marginTop: 12 }}>Code promo (facultatif)</label>
+        {codeApplique ? (
+          <div className="code-applique">
+            <span>
+              <strong>{codeInput.toUpperCase()}</strong> appliqué — réduction {codeApplique.libelle}
+              {" "}(−{remise.toFixed(2)} €)
+            </span>
+            <button type="button" className="link-action"
+              onClick={() => { setCodeApplique(null); setCodeInput(""); setCodeError(null); }}>
+              Retirer
+            </button>
+          </div>
+        ) : (
+          <div className="code-row">
+            <input value={codeInput}
+              onChange={(e) => { setCodeInput(e.target.value); setCodeError(null); }}
+              placeholder="FETEMERES2026"
+              style={{ textTransform: "uppercase" }} />
+            <button type="button" className="secondary"
+              onClick={appliquerCode}
+              disabled={verifCode || codeInput.trim().length === 0}>
+              {verifCode ? "..." : "Appliquer"}
+            </button>
+          </div>
+        )}
+        {codeError && <p className="error" style={{ marginTop: 6 }}>{codeError}</p>}
+
+        {codeApplique && (
+          <p>Total : <strong>{total.toFixed(2)} €</strong></p>
+        )}
         <p>Acompte à régler maintenant ({acomptePourcent} %) : <strong>{acompte.toFixed(2)} €</strong></p>
         <p className="muted">Le solde sera réglé au retrait.</p>
         {error && <p className="error">{error}</p>}
