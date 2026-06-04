@@ -221,6 +221,18 @@ struct CommandeEditView: View {
                         .foregroundStyle(Color.hkSageDeep)
                 }
             }
+            if let o = draft.email_confirmation_ouvert_at {
+                LabeledContent("Confirmation ouverte ✓") {
+                    Text(o.formatted(date: .abbreviated, time: .shortened))
+                        .foregroundStyle(Color.hkSageDeep)
+                }
+            }
+            if let o = draft.email_rappel_ouvert_at {
+                LabeledContent("Rappel ouvert ✓") {
+                    Text(o.formatted(date: .abbreviated, time: .shortened))
+                        .foregroundStyle(Color.hkSageDeep)
+                }
+            }
             Button {
                 Task { await partagerDevisPDF() }
             } label: {
