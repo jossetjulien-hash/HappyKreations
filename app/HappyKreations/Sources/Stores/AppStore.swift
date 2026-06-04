@@ -59,6 +59,8 @@ final class AppStore: ObservableObject {
         _ = await (c, p, m, co, pa, f, b, k, cf, t)
         // Indexation Spotlight des données fraîchement chargées.
         await SpotlightIndexer.reindex(store: self)
+        // Pousse les retraits du jour vers le widget.
+        WidgetBridge.push(store: self)
     }
 
     func loadTemoignages() async {
