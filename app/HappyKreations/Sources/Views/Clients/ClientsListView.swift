@@ -65,12 +65,18 @@ struct ClientEditView: View {
     let clientId: UUID
     @State var draft: Client
     var isNew: Bool = false
+    /// Appelé après la création d'un nouveau client (si isNew = true). Permet
+    /// par exemple à la fiche commande de sélectionner automatiquement le
+    /// client qui vient d'être créé.
+    var onCreated: ((Client) -> Void)? = nil
     @State private var errorText: String?
 
-    init(clientId: UUID, draft: Client? = nil, isNew: Bool = false) {
+    init(clientId: UUID, draft: Client? = nil, isNew: Bool = false,
+         onCreated: ((Client) -> Void)? = nil) {
         self.clientId = clientId
         self._draft = State(initialValue: draft ?? Client.new())
         self.isNew = isNew
+        self.onCreated = onCreated
     }
 
     var body: some View {
@@ -123,10 +129,15 @@ struct ClientEditView: View {
 
     private func save() async {
         do {
-            if isNew { _ = try await store.repo.insert("client", draft) }
-            else { _ = try await store.repo.update("client", draft, id: draft.id) }
-            await store.loadClients()
-            if isNew { dismiss() }
+            if isNew {
+                let inserted: Client = try await store.repo.insert("client", draft)
+                await store.loadClients()
+                onCreated?(inserted)
+                dismiss()
+            } else {
+                _ = try await store.repo.update("client", draft, id: draft.id)
+                await store.loadClients()
+            }
         } catch { errorText = error.localizedDescription }
     }
 }

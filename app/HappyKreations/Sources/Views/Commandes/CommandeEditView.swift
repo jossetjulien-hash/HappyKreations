@@ -22,6 +22,7 @@ struct CommandeEditView: View {
     @State private var photoRefUploading = false
     @State private var generationLien = false
     @State private var lienAPartager: URL?
+    @State private var nouveauClient: Client?
 
     init(commandeId: UUID, draft: Commande? = nil, isNew: Bool = false) {
         self.commandeId = commandeId
@@ -73,15 +74,32 @@ struct CommandeEditView: View {
                     .presentationDetents([.medium])
             }
         }
+        .sheet(item: $nouveauClient) { c in
+            NavigationStack {
+                ClientEditView(clientId: c.id, draft: c, isNew: true) { created in
+                    // Sélectionne automatiquement le nouveau client sur la commande.
+                    draft.client_id = created.id
+                }
+            }
+        }
     }
 
     private var sectionInfos: some View {
         Section("Informations") {
-            Picker("Client", selection: $draft.client_id) {
-                Text("— Aucun —").tag(UUID?.none)
-                ForEach(store.clients) { c in
-                    Text(c.nom).tag(Optional(c.id))
+            HStack {
+                Picker("Client", selection: $draft.client_id) {
+                    Text("— Aucun —").tag(UUID?.none)
+                    ForEach(store.clients) { c in
+                        Text(c.nom).tag(Optional(c.id))
+                    }
                 }
+                Button {
+                    nouveauClient = Client.new()
+                } label: {
+                    Image(systemName: "person.crop.circle.badge.plus")
+                }
+                .buttonStyle(.borderless)
+                .help("Créer un nouveau client")
             }
             TextField("Type d'événement", text: optional($draft.type_evenement))
             DatePicker("Date événement",
