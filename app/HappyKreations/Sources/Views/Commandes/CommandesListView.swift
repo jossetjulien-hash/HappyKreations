@@ -50,10 +50,18 @@ struct CommandesListView: View {
         store.commandes.filter { c in
             if let f = filtreStatut, c.statut != f { return false }
             if search.isEmpty { return true }
-            let s = search.lowercased()
-            let nomClient = store.client(id: c.client_id)?.nom.lowercased() ?? ""
-            return nomClient.contains(s) || (c.notes ?? "").lowercased().contains(s)
-                || (c.type_evenement ?? "").lowercased().contains(s)
+            let s = search.lowercased().trimmingCharacters(in: .whitespaces)
+            // Recherche numérique : si l'utilisateur tape un nombre, on tente
+            // un match sur le total exact.
+            if let n = Double(s.replacingOccurrences(of: ",", with: ".")),
+               abs(c.total - n) < 0.01 { return true }
+            let client = store.client(id: c.client_id)
+            let champs: [String?] = [
+                client?.nom, client?.telephone, client?.email,
+                c.notes, c.type_evenement, c.numero_facture,
+                c.message_gravure, c.couleur,
+            ]
+            return champs.contains { ($0 ?? "").lowercased().contains(s) }
         }
     }
 }

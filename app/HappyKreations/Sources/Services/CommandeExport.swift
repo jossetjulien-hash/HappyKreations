@@ -28,7 +28,48 @@ enum CommandeExport {
 
     // MARK: - Facture
 
+    enum TypeDocument {
+        case facture, devis
+
+        var titre: String {
+            switch self {
+            case .facture: return "FACTURE"
+            case .devis:   return "DEVIS"
+            }
+        }
+    }
+
     static func generateFacturePDF(
+        commande: Commande,
+        client: Client?,
+        lignes: [CommandeLigne],
+        produit: (UUID) -> Produit?,
+        atelier: Atelier,
+        encaisse: Double
+    ) -> URL? {
+        generateCommandePDF(
+            type: .facture, commande: commande, client: client,
+            lignes: lignes, produit: produit, atelier: atelier, encaisse: encaisse)
+    }
+
+    /// Génère un devis (équivalent visuel de la facture, mention DEVIS, validité
+    /// 30 jours, pas de référence à un acompte versé). Numéro D-AAAA-XXXXXXXX
+    /// (les 8 premiers caractères de l'UUID — non séquentiel pour ne pas
+    /// consommer la séquence de factures).
+    static func generateDevisPDF(
+        commande: Commande,
+        client: Client?,
+        lignes: [CommandeLigne],
+        produit: (UUID) -> Produit?,
+        atelier: Atelier
+    ) -> URL? {
+        generateCommandePDF(
+            type: .devis, commande: commande, client: client,
+            lignes: lignes, produit: produit, atelier: atelier, encaisse: 0)
+    }
+
+    private static func generateCommandePDF(
+        type: TypeDocument,
         commande: Commande,
         client: Client?,
         lignes: [CommandeLigne],
@@ -45,16 +86,24 @@ enum CommandeExport {
             )
         }
         let view = FactureSheet(
+            type: type,
             commande: commande,
             client: client,
             lignes: lignesFmt,
             atelier: atelier,
             encaisse: encaisse
-        ).frame(width: 595) // A4 portrait approx
+        ).frame(width: 595)
 
         let renderer = ImageRenderer(content: view)
         renderer.scale = 2
-        let nom = commande.numero_facture ?? "facture-\(commande.id.uuidString.prefix(8))"
+        let nom: String
+        switch type {
+        case .facture:
+            nom = commande.numero_facture ?? "facture-\(commande.id.uuidString.prefix(8))"
+        case .devis:
+            let annee = Calendar.current.component(.year, from: Date())
+            nom = "devis-\(annee)-\(commande.id.uuidString.prefix(8).uppercased())"
+        }
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(nom).pdf")
         renderer.render { size, ctx in
@@ -136,6 +185,7 @@ struct EtiquetteUnite: Identifiable {
 // MARK: - Feuille FACTURE
 
 struct FactureSheet: View {
+    var type: CommandeExport.TypeDocument = .facture
     let commande: Commande
     let client: Client?
     let lignes: [FactureLigne]
@@ -144,6 +194,18 @@ struct FactureSheet: View {
 
     private var total: Double { lignes.reduce(0) { $0 + $1.total } }
     private var resteDu: Double { max(0, total - encaisse) }
+    private var numero: String {
+        switch type {
+        case .facture:
+            return commande.numero_facture ?? "(en attente)"
+        case .devis:
+            let annee = Calendar.current.component(.year, from: Date())
+            return "D-\(annee)-\(commande.id.uuidString.prefix(8).uppercased())"
+        }
+    }
+    private var dateValidite: Date {
+        Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date()
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -168,13 +230,16 @@ struct FactureSheet: View {
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("FACTURE").font(.system(size: 11, weight: .heavy)).tracking(2)
+                    Text(type.titre).font(.system(size: 11, weight: .heavy)).tracking(2)
                         .foregroundStyle(.secondary)
-                    Text(commande.numero_facture ?? "(en attente)")
+                    Text(numero)
                         .font(.system(size: 18, weight: .semibold, design: .serif))
                     Text("Date : \(dateCourte(Date()))")
                         .font(.system(size: 10)).foregroundStyle(.secondary)
-                    if let d = commande.date_retrait {
+                    if type == .devis {
+                        Text("Valable jusqu'au \(dateCourte(dateValidite))")
+                            .font(.system(size: 10)).foregroundStyle(.secondary).italic()
+                    } else if let d = commande.date_retrait {
                         Text("Retrait : \(dateCourte(d))")
                             .font(.system(size: 10)).foregroundStyle(.secondary)
                     }
@@ -240,33 +305,42 @@ struct FactureSheet: View {
                         Text(euros(total)).font(.system(size: 14, weight: .semibold))
                             .frame(width: 100, alignment: .trailing)
                     }
-                    HStack {
-                        Text("Acompte versé").foregroundStyle(.secondary)
-                        Text("− \(euros(encaisse))").foregroundStyle(.secondary)
-                            .frame(width: 100, alignment: .trailing)
+                    if type == .facture {
+                        HStack {
+                            Text("Acompte versé").foregroundStyle(.secondary)
+                            Text("− \(euros(encaisse))").foregroundStyle(.secondary)
+                                .frame(width: 100, alignment: .trailing)
+                        }
+                        HStack {
+                            Text("Reste à régler").bold()
+                            Text(euros(resteDu)).font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(Color(red: 0.788, green: 0.514, blue: 0.533))
+                                .frame(width: 100, alignment: .trailing)
+                        }
+                        .padding(.top, 4)
                     }
-                    HStack {
-                        Text("Reste à régler").bold()
-                        Text(euros(resteDu)).font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(Color(red: 0.788, green: 0.514, blue: 0.533))
-                            .frame(width: 100, alignment: .trailing)
-                    }
-                    .padding(.top, 4)
                 }
                 .font(.system(size: 12))
                 .padding(12)
-                .background(Color(red: 0.984, green: 0.965, blue: 0.937)) // crème
+                .background(Color(red: 0.984, green: 0.965, blue: 0.937))
                 .cornerRadius(8)
             }
 
             Spacer(minLength: 0)
 
-            // Mentions légales
+            // Mentions selon le type
             VStack(alignment: .leading, spacing: 4) {
                 Text("TVA non applicable, article 293 B du CGI.")
                     .font(.system(size: 9)).italic()
-                Text("Document tenant lieu de facture — Régime micro-entreprise.")
-                    .font(.system(size: 9)).foregroundStyle(.secondary)
+                if type == .devis {
+                    Text("Devis valable 30 jours. Validation = acceptation de la commande et déclenchement de l'acompte (30 %).")
+                        .font(.system(size: 9)).foregroundStyle(.secondary)
+                    Text("Bon pour accord — Signature & date : _______________________________")
+                        .font(.system(size: 9)).foregroundStyle(.secondary).padding(.top, 4)
+                } else {
+                    Text("Document tenant lieu de facture — Régime micro-entreprise.")
+                        .font(.system(size: 9)).foregroundStyle(.secondary)
+                }
             }
             .padding(.top, 6)
         }

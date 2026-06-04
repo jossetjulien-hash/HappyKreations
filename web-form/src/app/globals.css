@@ -25,6 +25,71 @@
   --font-title: var(--font-fraunces), Georgia, serif;
   --font-script: var(--font-caveat), cursive;
   --font-body: var(--font-nunito), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  color-scheme: light dark;
+}
+
+/* ---------- Mode sombre ---------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* On garde la chaleur de la charte : crème → encre tirant vers le brun
+       chaud, pas un noir pur ; les accents rose/sauge restent identifiables. */
+    --cream: #1f1a17;        /* fond principal — encre brune chaude */
+    --cream-deep: #2a2420;   /* fond secondaire (cartes claires en clair) */
+    --ink: #f3eadc;          /* texte clair, doux */
+    --ink-soft: rgba(243, 234, 220, 0.62);
+    --hair: rgba(243, 234, 220, 0.14);
+
+    --rose: #e7b5b8;         /* primaire conservé, contraste OK sur le foncé */
+    --rose-deep: #f0bdc1;    /* éclairci pour rester lisible */
+    --sage: #c5d0bc;         /* éclairci */
+    --sage-deep: #b4c4ab;
+    --peach: #e8c4a0;
+    --lavender: #bcb1cf;
+
+    --shadow: 0 22px 50px -28px rgba(0, 0, 0, 0.6);
+
+    --bg: var(--cream);
+    --text: var(--ink);
+    --accent: var(--rose-deep);
+    --muted: var(--ink-soft);
+    --card: #2a2420;
+    --border: var(--hair);
+    --error: #e88378;
+  }
+
+  /* Surcharges spécifiques au mode sombre pour les surfaces qui étaient
+     codées en blanc dur. */
+  .testimonial,
+  .produit-tile,
+  .about-story {
+    background: var(--card);
+  }
+  .produit-tile-placeholder {
+    background: #3a322d;
+  }
+  .step-card {
+    background: var(--cream-deep);
+  }
+  .invite,
+  input,
+  select,
+  textarea {
+    background: #2a2420;
+    color: var(--ink);
+  }
+  .home-brand .logotype b,
+  .brand .logotype b,
+  .logotype b {
+    color: var(--rose-deep);
+  }
+  /* Surcharge du lavis chaud — plus subtil sur fond sombre */
+  body::before {
+    background:
+      radial-gradient(1200px 600px at 12% -5%, rgba(231, 181, 184, 0.08), transparent 60%),
+      radial-gradient(1000px 700px at 100% 8%, rgba(169, 188, 161, 0.06), transparent 55%),
+      radial-gradient(900px 800px at 50% 120%, rgba(207, 196, 224, 0.06), transparent 60%);
+  }
 }
 
 * { box-sizing: border-box; }

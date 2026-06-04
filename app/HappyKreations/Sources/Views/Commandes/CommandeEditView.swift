@@ -221,6 +221,12 @@ struct CommandeEditView: View {
                 }
             }
             Button {
+                Task { await partagerDevisPDF() }
+            } label: {
+                Label("Devis PDF", systemImage: "doc.text")
+            }
+            .disabled(isNew || lignes.isEmpty)
+            Button {
                 Task { await partagerFacturePDF() }
             } label: {
                 Label("Facture PDF", systemImage: "doc.richtext")
@@ -379,6 +385,22 @@ struct CommandeEditView: View {
             encaisse: encaisse
         ) else {
             errorText = "Génération du PDF impossible."
+            return
+        }
+        partagerFichier(url)
+    }
+
+    @MainActor
+    private func partagerDevisPDF() async {
+        let atelier = CommandeExport.Atelier.from(config: store.config)
+        guard let url = CommandeExport.generateDevisPDF(
+            commande: draft,
+            client: store.client(id: draft.client_id),
+            lignes: lignes,
+            produit: { store.produit(id: $0) },
+            atelier: atelier
+        ) else {
+            errorText = "Aucune ligne dans la commande."
             return
         }
         partagerFichier(url)
