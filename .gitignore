@@ -23,6 +23,12 @@ xcuserdata/
 *.xcworkspace/xcuserdata/
 app/HappyKreations.xcodeproj/project.xcworkspace/xcuserdata/
 
+# Le projet Xcode est entièrement généré par xcodegen (project.yml).
+# Versionner project.pbxproj cause des conflits + le piège où `git checkout`
+# remet une ancienne version sans les nouveaux .swift. Toujours régénérer via
+# scripts/dev-setup.sh.
+app/HappyKreations.xcodeproj/
+
 # Supabase
 supabase/.branches/
 supabase/.temp/
