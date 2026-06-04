@@ -408,6 +408,12 @@ footer-note { display: none; }
   margin-bottom: 12px;
 }
 .home-brand .sprig { width: 48px; margin-bottom: 4px; }
+.brand-logo {
+  display: block;
+  margin: 0 auto 10px;
+  border-radius: 18px;
+  box-shadow: 0 14px 32px -20px rgba(126, 148, 122, 0.4);
+}
 
 .logotype.small { font-size: 1.6rem; }
 

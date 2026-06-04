@@ -23,8 +23,19 @@ const nunito = Nunito_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "HappyKreations — Commander",
-  description: "Créations faites main — coffrets de chocolats & cornets de meringues pour vos événements",
+  title: "HappyKreations — Créations faites main",
+  description: "Coffrets de chocolats & cornets de meringues, façonnés à la main pour vos mariages, baptêmes et événements.",
+  openGraph: {
+    title: "HappyKreations",
+    description: "Créations faites main pour vos événements",
+    images: ["/og-image.png"],
+    type: "website",
+    locale: "fr_FR",
+  },
+  icons: {
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

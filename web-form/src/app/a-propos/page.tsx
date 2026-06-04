@@ -26,6 +26,7 @@ export default async function APropos() {
     <main className="home">
       <header className="home-brand">
         <Link href="/" className="logotype-link" aria-label="Retour à l'accueil">
+          <img src="/icon.png" alt="Logo HappyKreations" className="brand-logo" width={64} height={64} />
           <div className="logotype">happy<b>kreations</b></div>
         </Link>
         <div className="tagline">créations faites main</div>

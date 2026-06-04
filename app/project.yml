@@ -82,6 +82,7 @@ targets:
         excludes:
           - "HappyKreationsWidget.entitlements"
           - "Info.plist"
+      - path: HappyKreations/Resources/Assets.xcassets
     info:
       path: HappyKreationsWidget/Info.plist
       properties:

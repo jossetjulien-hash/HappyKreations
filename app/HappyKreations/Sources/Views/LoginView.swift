@@ -8,9 +8,10 @@ struct LoginView: View {
     var body: some View {
         VStack(spacing: 24) {
             VStack(spacing: 8) {
-                Image(systemName: "leaf.fill")
-                    .font(.system(size: 44))
-                    .foregroundStyle(Color.hkSage)
+                Image("AppLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 96, height: 96)
                 Text("happykreations")
                     .font(.hkTitle(38, weight: .light))
                     .foregroundStyle(Color.hkInk)

@@ -153,7 +153,8 @@ export default function Page() {
     <div className="container">
       <header className="brand">
         <a href="/" className="back-home" aria-label="Retour à l'accueil">← Retour à l'accueil</a>
-        <svg className="sprig" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+        <img src="/icon.png" alt="Logo HappyKreations" className="brand-logo" width={64} height={64} />
+        <svg className="sprig" style={{display:'none'}} viewBox="0 0 80 80" fill="none" aria-hidden="true">
           <path d="M40 70 C40 50 40 28 40 12" stroke="#7E947A" strokeWidth="1.6" strokeLinecap="round" />
           <g fill="#A9BCA1">
             <ellipse cx="28" cy="50" rx="9" ry="5" transform="rotate(-34 28 50)" />

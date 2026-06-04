@@ -164,13 +164,13 @@ struct AujourdhuiWidgetView: View {
         .padding(14)
     }
 
-    /// En-tête : logotype + tagline (pour l'instant typographique — sera
-    /// remplacé par l'image quand le logo bitmap sera fourni).
+    /// En-tête : monogramme + logotype.
     private var header: some View {
         HStack(spacing: 6) {
-            Image(systemName: "leaf.fill")
-                .foregroundStyle(Color(red: 0.494, green: 0.580, blue: 0.478))
-                .font(.caption2)
+            Image("AppLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 20, height: 20)
             (
                 Text("happy")
                     .font(.system(size: 14, weight: .light, design: .serif))

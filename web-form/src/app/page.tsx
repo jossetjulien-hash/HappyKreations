@@ -42,7 +42,7 @@ export default async function HomePage() {
   return (
     <main className="home">
       <header className="home-brand">
-        <Sprig />
+        <img src="/icon.png" alt="Logo HappyKreations" className="brand-logo" width={72} height={72} />
         <div className="logotype">happy<b>kreations</b></div>
         <div className="tagline">créations faites main</div>
       </header>
