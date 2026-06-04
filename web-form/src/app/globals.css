@@ -426,6 +426,26 @@ button.secondary {
   padding: 4px 8px;
 }
 
+/* ----- Étoiles d'avis ----- */
+.etoiles {
+  display: flex;
+  gap: 4px;
+  margin: 6px 0 14px;
+}
+.etoile {
+  background: transparent;
+  border: 0;
+  padding: 4px 2px;
+  font-size: 2rem;
+  cursor: pointer;
+  color: var(--hair);
+  line-height: 1;
+  transition: color 0.15s, transform 0.05s;
+}
+.etoile:hover { color: var(--peach); }
+.etoile:active { transform: scale(0.92); }
+.etoile.on { color: var(--rose-deep); }
+
 footer-note { display: none; }
 
 /* =========================================================================

@@ -360,3 +360,103 @@ export async function sendRappelRetrait(d: RappelEmailData): Promise<boolean> {
     return false;
   }
 }
+
+// ===========================================================================
+// AVIS POST-RETRAIT (cron quotidien J+1)
+// ===========================================================================
+
+export interface AvisEmailData {
+  clientNom: string;
+  clientEmail: string;
+  nomAtelier: string;
+  commandeId: string;       // UUID — sert de capability token dans l'URL
+  baseUrl: string;          // ex. https://commande.happykreations.fr
+}
+
+export function renderDemandeAvis(d: AvisEmailData): string {
+  const p = PALETTE;
+  const lien = `${d.baseUrl}/avis/${d.commandeId}`;
+  return `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:${p.cream};font-family:'Helvetica Neue',Arial,sans-serif;color:${p.ink};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${p.cream};padding:32px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+
+        <tr><td align="center" style="padding-bottom:24px;">
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:300;letter-spacing:-1px;color:${p.ink};">
+            happy<span style="font-style:italic;color:${p.roseDeep};">kreations</span>
+          </div>
+          <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:${p.inkSoft};margin-top:8px;">
+            créations faites main
+          </div>
+        </td></tr>
+
+        <tr><td style="background:#ffffff;border:1px solid ${p.creamDeep};border-radius:20px;padding:32px;">
+          <div style="font-family:Georgia,serif;font-size:22px;color:${p.ink};margin-bottom:6px;">
+            Bonjour ${escapeHtml(d.clientNom)} ✿
+          </div>
+          <p style="font-size:15px;line-height:1.7;color:${p.ink};margin:0 0 20px;">
+            J'espère que vos douceurs ont accompagné un beau moment ! Si vous avez deux minutes, j'aimerais beaucoup connaître votre ressenti — un mot suffit, vraiment.
+          </p>
+
+          <div style="text-align:center;margin:28px 0 8px;">
+            <a href="${lien}"
+               style="display:inline-block;background:${p.roseDeep};color:#fff;text-decoration:none;padding:14px 28px;border-radius:999px;font-weight:bold;font-size:15px;">
+              Laisser un avis ✿
+            </a>
+          </div>
+
+          <p style="font-size:13px;color:${p.inkSoft};text-align:center;margin:14px 0 0;line-height:1.6;">
+            Pas obligatoire bien sûr — c'est juste un grand merci pour moi, et ça aidera d'autres clients à se décider.
+          </p>
+        </td></tr>
+
+        <tr><td align="center" style="padding-top:24px;">
+          <div style="font-family:Georgia,serif;font-style:italic;font-size:18px;color:${p.sageDeep};">
+            Avec gratitude ✿
+          </div>
+          <div style="font-size:13px;color:${p.inkSoft};margin-top:6px;">
+            ${escapeHtml(d.nomAtelier)}
+          </div>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+export async function sendDemandeAvis(d: AvisEmailData): Promise<boolean> {
+  const apiKey = Deno.env.get("RESEND_API_KEY");
+  if (!apiKey) {
+    console.warn("RESEND_API_KEY absent — demande d'avis ignorée.");
+    return false;
+  }
+  if (!d.clientEmail) return false;
+  const from = Deno.env.get("EMAIL_FROM") ?? "HappyKreations <onboarding@resend.dev>";
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "authorization": `Bearer ${apiKey}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        from,
+        to: [d.clientEmail],
+        subject: `Un petit mot sur votre commande ${d.nomAtelier} ✿`,
+        html: renderDemandeAvis(d),
+        tags: [
+          { name: "kind", value: "avis" },
+          { name: "commande_id", value: d.commandeId },
+        ],
+      }),
+    });
+    if (!res.ok) {
+      console.error("Échec envoi avis Resend :", res.status, await res.text());
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("Erreur envoi avis :", err);
+    return false;
+  }
+}

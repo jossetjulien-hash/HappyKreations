@@ -529,6 +529,18 @@ struct ExtractionPayload: Codable, Hashable {
     var notes: String?
 }
 
+// MARK: - Avis post-retrait
+
+struct Avis: Codable, Identifiable, Hashable {
+    var id: UUID
+    var commande_id: UUID
+    var note: Int?
+    var texte: String?
+    var auteur: String?
+    var visible: Bool
+    var cree_le: Date
+}
+
 // MARK: - Code promo
 
 struct CodePromo: Codable, Identifiable, Hashable {

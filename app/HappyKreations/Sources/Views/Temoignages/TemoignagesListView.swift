@@ -8,6 +8,19 @@ struct TemoignagesListView: View {
 
     var body: some View {
         List {
+            if !store.avis.isEmpty {
+                Section {
+                    ForEach(store.avis) { a in
+                        AvisRow(avis: a, onPublier: { publier(avis: a) },
+                                onSupprimer: { supprimerAvis(a) })
+                    }
+                } header: {
+                    Text("Avis reçus (\(store.avis.count))")
+                } footer: {
+                    Text("Avis collectés via l'email post-retrait. Tape « Publier » pour le transformer en témoignage visible sur la home.")
+                }
+            }
+
             Section {
                 ForEach(store.temoignages) { t in
                     Button {
@@ -22,6 +35,8 @@ struct TemoignagesListView: View {
                     Text("Aucun témoignage. Ajoutez-en un pour qu'il apparaisse sur le site.")
                         .foregroundStyle(.secondary)
                 }
+            } header: {
+                Text("Témoignages publiés")
             } footer: {
                 Text("Les témoignages marqués « visibles » apparaissent sur la page d'accueil du site. Glissez pour supprimer.")
             }
@@ -52,6 +67,80 @@ struct TemoignagesListView: View {
                 await store.loadTemoignages()
             } catch { errorText = error.localizedDescription }
         }
+    }
+
+    private func publier(avis a: Avis) {
+        // Crée un Témoignage à partir de l'avis, puis efface l'avis.
+        let t = Temoignage(
+            id: UUID(),
+            auteur: a.auteur ?? "Anonyme",
+            texte: a.texte ?? "",
+            evenement: nil,
+            visible: true,
+            ordre: store.temoignages.count,
+            created_at: nil
+        )
+        Task {
+            do {
+                _ = try await store.repo.insert("temoignage", t)
+                try await store.repo.delete("avis", id: a.id)
+                await store.loadTemoignages()
+                await store.loadAvis()
+            } catch { errorText = error.localizedDescription }
+        }
+    }
+
+    private func supprimerAvis(_ a: Avis) {
+        Task {
+            do {
+                try await store.repo.delete("avis", id: a.id)
+                await store.loadAvis()
+            } catch { errorText = error.localizedDescription }
+        }
+    }
+}
+
+private struct AvisRow: View {
+    let avis: Avis
+    let onPublier: () -> Void
+    let onSupprimer: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                if let n = avis.note {
+                    HStack(spacing: 1) {
+                        ForEach(1...5, id: \.self) { i in
+                            Image(systemName: i <= n ? "star.fill" : "star")
+                                .font(.caption)
+                                .foregroundStyle(Color.hkRoseDeep)
+                        }
+                    }
+                }
+                Spacer()
+                Text(avis.cree_le.formatted(date: .abbreviated, time: .omitted))
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+            if let t = avis.texte, !t.isEmpty {
+                Text("« \(t) »").font(.subheadline)
+            }
+            if let auteur = avis.auteur, !auteur.isEmpty {
+                Text(auteur).font(.caption).foregroundStyle(.secondary)
+            }
+            HStack(spacing: 12) {
+                Button("Publier", action: onPublier)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .disabled(avis.texte?.isEmpty != false)
+                Button(role: .destructive, action: onSupprimer) {
+                    Text("Ignorer")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+            .padding(.top, 4)
+        }
+        .padding(.vertical, 4)
     }
 }
 
