@@ -36,6 +36,8 @@ final class AppStore: ObservableObject {
 
     let repo = Repository()
     private var realtimeTasks: [Task<Void, Never>] = []
+    private var realtimeChannel: RealtimeChannelV2?
+    private var realtimeStarting = false
 
     init() {
         self.calendarSyncEnabled = UserDefaults.standard.bool(forKey: Self.calSyncEnabledKey)
@@ -172,11 +174,18 @@ final class AppStore: ObservableObject {
     // MARK: - Realtime
 
     func startRealtime() {
-        stopRealtime()
-        let client = SupabaseService.shared.client
-        let channel = client.channel("public:happykreations")
+        // Idempotent : si on est déjà connecté ou en train de s'abonner, ne
+        // refait rien. Évite le warning supabase-swift « Cannot add
+        // postgres_changes callbacks after subscribe() » qui se déclenche
+        // si on rappelle postgresChange sur un channel déjà subscribed.
+        guard realtimeChannel == nil, !realtimeStarting else { return }
+        realtimeStarting = true
 
         Task {
+            defer { realtimeStarting = false }
+            let client = SupabaseService.shared.client
+            let channel = client.channel("public:happykreations")
+
             let commandes = channel.postgresChange(AnyAction.self,
                                                    schema: "public", table: "commande")
             let matieres = channel.postgresChange(AnyAction.self,
@@ -201,6 +210,7 @@ final class AppStore: ObservableObject {
                 for await _ in produits { await self?.loadProduits() }
             }
             await MainActor.run {
+                self.realtimeChannel = channel
                 self.realtimeTasks = [t1, t2, t3]
             }
         }
@@ -209,6 +219,13 @@ final class AppStore: ObservableObject {
     func stopRealtime() {
         for t in realtimeTasks { t.cancel() }
         realtimeTasks = []
+        if let channel = realtimeChannel {
+            // Désabonnement asynchrone côté Supabase pour que le prochain
+            // startRealtime() recrée un channel propre. On capture la ref
+            // pour ne pas dépendre de self.
+            Task { await SupabaseService.shared.client.removeChannel(channel) }
+            realtimeChannel = nil
+        }
     }
 
     // MARK: - Helpers UI
