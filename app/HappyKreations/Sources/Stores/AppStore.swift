@@ -239,16 +239,25 @@ final class AppStore: ObservableObject {
         calendarSyncId = nil
     }
 
-    /// Pousse l'état actuel des commandes dans le Calendrier sélectionné.
+    /// Pousse l'état actuel des commandes dans le Calendrier sélectionné, et
+    /// supprime les événements orphelins (commandes qui n'existent plus côté
+    /// BDD mais dont l'event est resté dans le calendrier — typiquement après
+    /// une suppression depuis une autre interface ou avant l'introduction du
+    /// retrait à la suppression).
     func syncCommandesToCalendar() async {
         guard calendarSyncEnabled,
               CalendarService.shared.hasAccess,
               let cid = calendarSyncId,
               let cal = CalendarService.shared.calendar(id: cid)
         else { return }
+        // 1. Upsert : crée / met à jour / retire (si annulée) chaque commande.
         for cmd in commandes {
             let nom = client(id: cmd.client_id)?.nom
             try? CalendarService.shared.sync(commande: cmd, clientNom: nom, calendar: cal)
         }
+        // 2. Purge les orphelins : tout event HappyKreations dans le calendrier
+        //    dont l'UUID n'est plus dans la liste actuelle est supprimé.
+        let ids = Set(commandes.map(\.id))
+        CalendarService.shared.removeOrphans(existingCommandeIds: ids, calendar: cal)
     }
 }

@@ -381,6 +381,15 @@ struct CommandeEditView: View {
 
     private func supprimer() async {
         do {
+            // 1. Retire l'événement Calendrier associé s'il existe (avant le
+            //    delete BDD pour avoir encore le contexte de la commande).
+            if store.calendarSyncEnabled,
+               let cid = store.calendarSyncId,
+               let cal = CalendarService.shared.calendar(id: cid) {
+                try? CalendarService.shared.remove(commandeId: commandeId, calendar: cal)
+            }
+            // 2. Supprime la commande dans Supabase (cascade sur les lignes
+            //    et paiements grâce aux FK ON DELETE CASCADE).
             try await store.repo.delete("commande", id: commandeId)
             await store.loadCommandes()
             dismiss()

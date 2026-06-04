@@ -89,6 +89,27 @@ final class CalendarService {
         }
     }
 
+    /// Supprime tout événement HappyKreations (identifié par son URL custom
+    /// `happykreations://commande/<uuid>`) dont l'UUID n'est pas dans la liste
+    /// fournie. Utilisé pour nettoyer les commandes supprimées en BDD.
+    func removeOrphans(existingCommandeIds: Set<UUID>, calendar: EKCalendar) {
+        let cal = Calendar.current
+        let now = Date()
+        let start = cal.date(byAdding: .year, value: -1, to: now) ?? now
+        let end = cal.date(byAdding: .year, value: 2, to: now) ?? now
+        let predicate = store.predicateForEvents(withStart: start, end: end, calendars: [calendar])
+        let scheme = Self.urlScheme
+        let prefix = "\(scheme)://commande/"
+        for event in store.events(matching: predicate) {
+            guard let url = event.url?.absoluteString, url.hasPrefix(prefix) else { continue }
+            let uuidStr = String(url.dropFirst(prefix.count))
+            guard let id = UUID(uuidString: uuidStr) else { continue }
+            if !existingCommandeIds.contains(id) {
+                try? store.remove(event, span: .thisEvent, commit: true)
+            }
+        }
+    }
+
     /// Cherche l'événement appartenant à une commande dans une fenêtre temporelle large.
     private func findEvent(commandeId: UUID, calendar: EKCalendar) -> EKEvent? {
         let cal = Calendar.current
