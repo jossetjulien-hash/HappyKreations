@@ -109,5 +109,6 @@ async function envoyerConfirmation(commande_id: string): Promise<void> {
     messageGravure: cmd.message_gravure ?? null,
     couleur: cmd.couleur ?? null,
     nomAtelier,
+    commandeId: commande_id,
   });
 }

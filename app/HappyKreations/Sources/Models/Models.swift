@@ -231,6 +231,14 @@ struct MouvementStock: Codable, Identifiable, Hashable {
 
 struct Commande: Codable, Identifiable, Hashable {
     var id: UUID
+
+    /// Référence courte affichable dès la création — les 4 premiers caractères
+    /// de l'UUID en majuscule, préfixés `#`. Stable et unique pour cette
+    /// commande, complémentaire du numéro de facture (séquentiel mais attribué
+    /// uniquement à confirmation).
+    var refCourte: String {
+        "#" + String(id.uuidString.prefix(4)).uppercased()
+    }
     var client_id: UUID?
     var canal: CanalCommande
     var type_evenement: String?

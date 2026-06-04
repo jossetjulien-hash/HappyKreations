@@ -32,6 +32,9 @@ export interface CommandeEmailData {
   messageGravure: string | null;
   couleur: string | null;
   nomAtelier: string;
+  /** UUID de la commande. Utilisé pour tagger l'envoi Resend afin que le
+   *  webhook d'ouverture retrouve la bonne commande. */
+  commandeId?: string;
 }
 
 function euros(n: number): string {
@@ -175,6 +178,10 @@ export async function sendCommandeConfirmation(d: CommandeEmailData): Promise<bo
         to: [d.clientEmail],
         subject: `Votre commande ${d.nomAtelier} est confirmée ✿`,
         html: renderCommandeConfirmation(d),
+        tags: d.commandeId ? [
+          { name: "kind", value: "confirmation" },
+          { name: "commande_id", value: d.commandeId },
+        ] : undefined,
       }),
     });
     if (!res.ok) {
@@ -199,6 +206,7 @@ export interface RappelEmailData {
   nomAtelier: string;
   adresseAtelier: string;
   telephoneAtelier: string;
+  commandeId?: string;
   lignes: { nom: string; quantite: number; declinaison: string | null }[];
   total: number;
   acompte: number;
@@ -336,6 +344,10 @@ export async function sendRappelRetrait(d: RappelEmailData): Promise<boolean> {
         to: [d.clientEmail],
         subject: `Votre retrait ${d.nomAtelier} — c'est dans 3 jours ✿`,
         html: renderRappelRetrait(d),
+        tags: d.commandeId ? [
+          { name: "kind", value: "rappel" },
+          { name: "commande_id", value: d.commandeId },
+        ] : undefined,
       }),
     });
     if (!res.ok) {

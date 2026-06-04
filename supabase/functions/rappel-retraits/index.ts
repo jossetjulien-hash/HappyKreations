@@ -93,6 +93,7 @@ Deno.serve(async (req) => {
         messageGravure: c.message_gravure ?? null,
         couleur: c.couleur ?? null,
         photoRefUrl: c.photo_ref_url ?? null,
+        commandeId: c.id,
       });
 
       if (ok) {

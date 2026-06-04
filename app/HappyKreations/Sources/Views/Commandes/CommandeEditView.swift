@@ -208,6 +208,7 @@ struct CommandeEditView: View {
 
     private var sectionDocuments: some View {
         Section {
+            LabeledContent("Référence", value: draft.refCourte)
             if let n = draft.numero_facture {
                 LabeledContent("Facture", value: n)
             } else {

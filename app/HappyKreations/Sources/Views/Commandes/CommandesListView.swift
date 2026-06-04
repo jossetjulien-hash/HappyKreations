@@ -58,7 +58,7 @@ struct CommandesListView: View {
             let client = store.client(id: c.client_id)
             let champs: [String?] = [
                 client?.nom, client?.telephone, client?.email,
-                c.notes, c.type_evenement, c.numero_facture,
+                c.notes, c.type_evenement, c.numero_facture, c.refCourte,
                 c.message_gravure, c.couleur,
             ]
             return champs.contains { ($0 ?? "").lowercased().contains(s) }
@@ -76,8 +76,13 @@ struct CommandeRow: View {
                 CommandePhotoThumb(url: commande.photo_ref_url, size: 56)
             }
             VStack(alignment: .leading, spacing: 4) {
-                Text(store.client(id: commande.client_id)?.nom ?? "Client inconnu")
-                    .font(.headline)
+                HStack(spacing: 6) {
+                    Text(commande.refCourte)
+                        .font(.caption2).bold()
+                        .foregroundStyle(Color.hkSageDeep)
+                    Text(store.client(id: commande.client_id)?.nom ?? "Client inconnu")
+                        .font(.headline)
+                }
                 if let d = commande.date_retrait {
                     Label(d.formatted(date: .abbreviated, time: .omitted),
                           systemImage: "calendar")
