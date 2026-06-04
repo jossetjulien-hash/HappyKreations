@@ -214,6 +214,12 @@ struct CommandeEditView: View {
                 Text("Le numéro de facture sera attribué automatiquement quand l'acompte sera reçu.")
                     .font(.caption).foregroundStyle(.secondary)
             }
+            if let r = draft.rappel_envoye_at {
+                LabeledContent("Rappel J-3 envoyé") {
+                    Text(r.formatted(date: .abbreviated, time: .shortened))
+                        .foregroundStyle(Color.hkSageDeep)
+                }
+            }
             Button {
                 Task { await partagerFacturePDF() }
             } label: {
@@ -229,7 +235,7 @@ struct CommandeEditView: View {
         } header: {
             Text("Documents")
         } footer: {
-            Text("La facture est numérotée séquentiellement (F\(Calendar.current.component(.year, from: Date()))-001…). Une étiquette est générée par unité commandée.")
+            Text("La facture est numérotée séquentiellement (F\(Calendar.current.component(.year, from: Date()))-001…). Un rappel J-3 est envoyé automatiquement au client par email quand l'atelier a une clé Resend configurée.")
         }
     }
 
