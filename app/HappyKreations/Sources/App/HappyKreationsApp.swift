@@ -13,6 +13,9 @@ struct HappyKreationsApp: App {
                 .hkTheme()
                 .task {
                     await auth.restoreSession()
+                    // Demande d'autorisation locale (UserNotifications) — sans APNs,
+                    // pas besoin de Developer Program.
+                    await LocalNotificationService.shared.requestAuthorizationIfNeeded()
                 }
         }
         #if os(macOS)

@@ -1,5 +1,6 @@
 import SwiftUI
 import EventKit
+import UserNotifications
 #if os(macOS)
 import AppKit
 #else
@@ -22,6 +23,8 @@ struct ReglagesView: View {
     @State private var reminderSources: [RemindersService.SourceOption] = []
     @AppStorage(RemindersService.preferredSourceKey) private var preferredReminderSource: String = ""
     @State private var anneeExport: Int = Calendar.current.component(.year, from: Date())
+    @AppStorage(LocalNotificationService.enabledKey) private var notificationsEnabled = true
+    @State private var notifAuthStatus: UNAuthorizationStatus = .notDetermined
 
     var body: some View {
         Form {
@@ -99,6 +102,19 @@ struct ReglagesView: View {
                 Text("Rappels")
             } footer: {
                 Text("Les rappels créés par l'app (ex. \"Commander chez le fournisseur X\") iront dans le compte choisi. « Automatique » sélectionne ton compte iCloud personnel quand il est disponible.")
+            }
+
+            Section {
+                Toggle("Activer les notifications", isOn: $notificationsEnabled)
+                    .disabled(notifAuthStatus == .denied)
+                if notifAuthStatus == .denied {
+                    Text("Autorisation refusée. Active-les dans Réglages système → Notifications → HappyKreations.")
+                        .font(.caption).foregroundStyle(.orange)
+                }
+            } header: {
+                Text("Notifications")
+            } footer: {
+                Text("Tu seras notifié(e) à chaque nouvelle commande arrivée du formulaire web et à chaque acompte Stripe reçu. Notifications locales — pas de service tiers, pas de compte Apple Developer requis.")
             }
 
             Section("Paramètres globaux") {
@@ -183,6 +199,7 @@ struct ReglagesView: View {
             restaurer()
             await chargerCalendriers()
             await chargerSourcesRappels()
+            notifAuthStatus = await LocalNotificationService.shared.currentStatus()
         }
         .onChange(of: store.config) { _, _ in restaurer() }
         .alert("Erreur", isPresented: .init(get: { errorText != nil }, set: { _ in errorText = nil })) {

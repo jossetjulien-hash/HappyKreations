@@ -84,12 +84,41 @@ final class AppStore: ObservableObject {
         } catch { lastError = "matiere: \(error.localizedDescription)" }
     }
 
+    /// `true` après le premier chargement réussi — on n'envoie des notifications
+    /// que sur les reloads ultérieurs (sinon, au démarrage, on notifierait pour
+    /// toutes les commandes déjà existantes).
+    private var commandesLoadedOnce = false
+
     func loadCommandes() async {
         do {
-            commandes = try await repo.selectAll(Commande.self, from: "commande",
-                                                 orderBy: "date_retrait", ascending: true)
+            let avant = commandes
+            let nouvelles = try await repo.selectAll(Commande.self, from: "commande",
+                                                     orderBy: "date_retrait", ascending: true)
+            if commandesLoadedOnce {
+                await notifierChangements(avant: avant, apres: nouvelles)
+            }
+            commandes = nouvelles
+            commandesLoadedOnce = true
             await syncCommandesToCalendar()
         } catch { lastError = "commande: \(error.localizedDescription)" }
+    }
+
+    /// Détecte les nouveautés et déclenche les notifications locales.
+    /// - Nouvelle commande formulaire (insertion) → « Nouvelle commande ».
+    /// - Transition a_confirmer → confirmee (acompte Stripe reçu) → « Acompte reçu ».
+    private func notifierChangements(avant: [Commande], apres: [Commande]) async {
+        let parId = Dictionary(uniqueKeysWithValues: avant.map { ($0.id, $0) })
+        for c in apres {
+            if let precedent = parId[c.id] {
+                if precedent.statut == .a_confirmer && c.statut == .confirmee {
+                    await LocalNotificationService.shared.notifyAcompteRecu(
+                        c, clientNom: client(id: c.client_id)?.nom)
+                }
+            } else if c.canal == .formulaire {
+                await LocalNotificationService.shared.notifyNouvelleCommande(
+                    c, clientNom: client(id: c.client_id)?.nom)
+            }
+        }
     }
 
     func loadFournisseurs() async {
