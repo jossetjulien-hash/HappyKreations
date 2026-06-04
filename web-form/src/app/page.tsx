@@ -144,6 +144,11 @@ export default async function HomePage() {
       <footer className="home-footer">
         <div className="logotype small">happy<b>kreations</b></div>
         <div className="muted">créations faites main · paiement sécurisé Stripe</div>
+        <div className="footer-links">
+          <Link href="/a-propos">L'atelier</Link>
+          <span aria-hidden="true">·</span>
+          <Link href="/commander">Commander</Link>
+        </div>
       </footer>
     </main>
   );

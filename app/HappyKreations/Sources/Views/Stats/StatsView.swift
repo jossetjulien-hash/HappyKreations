@@ -70,21 +70,37 @@ struct StatsView: View {
     private var kpiSection: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 12)], spacing: 12) {
             statCard("CA cumulé", value: euros(caTotalPeriode),
-                     icon: "chart.line.uptrend.xyaxis", tint: .indigo)
+                     icon: "chart.line.uptrend.xyaxis", tint: .indigo,
+                     variation: variationPourcent(caTotalPeriode, caPeriodePrecedente))
             statCard("Marge brute", value: margeLabel,
-                     icon: "percent", tint: .mint)
+                     icon: "percent", tint: .mint,
+                     variation: nil)
             statCard("Commandes", value: "\(commandesPeriode.count)",
-                     icon: "doc.text.fill", tint: .purple)
+                     icon: "doc.text.fill", tint: .purple,
+                     variation: variationPourcent(Double(commandesPeriode.count),
+                                                  Double(commandesPeriodePrecedente.count)))
             statCard("Panier moyen", value: euros(panierMoyen),
-                     icon: "cart.fill", tint: .teal)
+                     icon: "cart.fill", tint: .teal,
+                     variation: variationPourcent(panierMoyen, panierMoyenPrecedent))
         }
     }
 
-    private func statCard(_ title: String, value: String, icon: String, tint: Color) -> some View {
+    private func statCard(_ title: String, value: String, icon: String,
+                          tint: Color, variation: Double?) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Label(title, systemImage: icon)
                 .font(.caption).foregroundStyle(.secondary).lineLimit(1)
             Text(value).font(.title3).bold().foregroundStyle(tint)
+            if let v = variation, abs(v) > 0.1 {
+                HStack(spacing: 4) {
+                    Image(systemName: v >= 0 ? "arrow.up.right" : "arrow.down.right")
+                    Text("\(v >= 0 ? "+" : "")\(v, format: .number.precision(.fractionLength(0...1))) %")
+                    Text("vs période précédente")
+                        .foregroundStyle(.secondary)
+                }
+                .font(.caption2)
+                .foregroundStyle(v >= 0 ? .green : .red)
+            }
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -195,10 +211,24 @@ struct StatsView: View {
             ?? .distantPast
     }
 
+    /// Début de la période N-1 (la même fenêtre de nbMois, juste avant la
+    /// période actuelle). Permet une comparaison à durée égale.
+    private var debutPeriodePrecedente: Date {
+        Calendar.current.date(byAdding: .month, value: -periode.nbMois * 2, to: Date())
+            ?? .distantPast
+    }
+
     private var commandesPeriode: [Commande] {
         store.commandes.filter {
-            ($0.date_retrait ?? $0.created_at ?? .distantPast) >= debutPeriode
-            && $0.statut != .annulee
+            let d = $0.date_retrait ?? $0.created_at ?? .distantPast
+            return d >= debutPeriode && $0.statut != .annulee
+        }
+    }
+
+    private var commandesPeriodePrecedente: [Commande] {
+        store.commandes.filter {
+            let d = $0.date_retrait ?? $0.created_at ?? .distantPast
+            return d >= debutPeriodePrecedente && d < debutPeriode && $0.statut != .annulee
         }
     }
 
@@ -206,8 +236,25 @@ struct StatsView: View {
         commandesPeriode.reduce(0) { $0 + $1.total }
     }
 
+    private var caPeriodePrecedente: Double {
+        commandesPeriodePrecedente.reduce(0) { $0 + $1.total }
+    }
+
     private var panierMoyen: Double {
         commandesPeriode.isEmpty ? 0 : caTotalPeriode / Double(commandesPeriode.count)
+    }
+
+    private var panierMoyenPrecedent: Double {
+        commandesPeriodePrecedente.isEmpty
+            ? 0
+            : caPeriodePrecedente / Double(commandesPeriodePrecedente.count)
+    }
+
+    /// Variation N vs N-1 en pourcentage. Retourne nil si N-1 est nul (pas de
+    /// référence, on n'affiche rien plutôt que de montrer "+∞ %").
+    private func variationPourcent(_ courant: Double, _ precedent: Double) -> Double? {
+        guard precedent > 0 else { return nil }
+        return ((courant - precedent) / precedent) * 100
     }
 
     private var margeLabel: String {
