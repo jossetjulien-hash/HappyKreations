@@ -20,6 +20,8 @@ struct CommandeEditView: View {
     @State private var errorText: String?
     @State private var photoRefItem: PhotosPickerItem?
     @State private var photoRefUploading = false
+    @State private var generationLien = false
+    @State private var lienAPartager: URL?
 
     init(commandeId: UUID, draft: Commande? = nil, isNew: Bool = false) {
         self.commandeId = commandeId
@@ -65,6 +67,12 @@ struct CommandeEditView: View {
         .alert("Erreur", isPresented: .init(get: { errorText != nil }, set: { _ in errorText = nil })) {
             Button("OK") { errorText = nil }
         } message: { Text(errorText ?? "") }
+        .sheet(isPresented: .init(get: { lienAPartager != nil }, set: { if !$0 { lienAPartager = nil } })) {
+            if let url = lienAPartager {
+                ShareSheet(items: [url])
+                    .presentationDetents([.medium])
+            }
+        }
     }
 
     private var sectionInfos: some View {
@@ -203,6 +211,20 @@ struct CommandeEditView: View {
                 Label("Encaisser le solde", systemImage: "creditcard")
             }
             .disabled(resteDu <= 0 || isNew)
+            Button {
+                Task { await partagerLienPaiement(motif: .acompte) }
+            } label: {
+                Label(generationLien ? "Génération…" : "Partager un lien d'acompte",
+                      systemImage: "link")
+            }
+            .disabled(isNew || generationLien || acompte <= 0 || encaisse > 0)
+            Button {
+                Task { await partagerLienPaiement(motif: .solde) }
+            } label: {
+                Label(generationLien ? "Génération…" : "Partager un lien de solde",
+                      systemImage: "link.circle")
+            }
+            .disabled(isNew || generationLien || resteDu <= 0)
         }
     }
 
@@ -450,7 +472,66 @@ struct CommandeEditView: View {
         rootVC?.present(av, animated: true)
         #endif
     }
+
+    // MARK: - Lien de paiement Stripe
+
+    private func partagerLienPaiement(motif: Repository.MotifPaiement) async {
+        generationLien = true
+        defer { generationLien = false }
+        do {
+            let lien = try await store.repo.creerLienPaiement(
+                commande: commandeId, motif: motif)
+            guard let url = URL(string: lien.checkout_url) else {
+                errorText = "URL de paiement invalide."
+                return
+            }
+            lienAPartager = url
+        } catch {
+            errorText = "Génération du lien : \(error.localizedDescription)"
+        }
+    }
 }
+
+/// Sheet de partage cross-platform : ouvre Messages, WhatsApp, Mail, etc.
+struct ShareSheet: View {
+    let items: [Any]
+
+    var body: some View {
+        #if os(iOS)
+        UIShareSheetWrapper(items: items)
+        #else
+        // macOS : copie dans le presse-papiers
+        VStack(spacing: 16) {
+            Text("Lien de paiement").font(.headline)
+            if let url = items.first as? URL {
+                Text(url.absoluteString)
+                    .font(.system(.caption, design: .monospaced))
+                    .textSelection(.enabled)
+                    .padding(8)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(.background.secondary))
+                Button("Copier") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(url.absoluteString, forType: .string)
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(24)
+        .frame(minWidth: 360)
+        #endif
+    }
+}
+
+#if os(iOS)
+import UIKit
+private struct UIShareSheetWrapper: UIViewControllerRepresentable {
+    let items: [Any]
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
+}
+#endif
 
 /// Vignette de la photo de référence (avec placeholder).
 private struct PhotoRefThumb: View {

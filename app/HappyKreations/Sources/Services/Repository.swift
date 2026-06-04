@@ -127,4 +127,37 @@ struct Repository {
         default:     return "image/jpeg"
         }
     }
+
+    // MARK: - Stripe : lien de paiement à partager
+
+    enum MotifPaiement: String { case acompte, solde, libre }
+
+    struct LienPaiement: Decodable {
+        let checkout_url: String
+        let montant: Double
+        let libelle: String
+    }
+
+    /// Génère une URL Stripe Checkout pour la commande donnée. Si `montant`
+    /// est nil, l'edge function choisit automatiquement (acompte si non versé,
+    /// sinon reste dû).
+    func creerLienPaiement(commande id: UUID,
+                           montant: Double? = nil,
+                           motif: MotifPaiement = .libre) async throws -> LienPaiement {
+        struct Body: Encodable {
+            let commande_id: String
+            let montant: Double?
+            let motif: String
+        }
+        let body = Body(
+            commande_id: id.uuidString.lowercased(),
+            montant: montant,
+            motif: motif.rawValue
+        )
+        let res: LienPaiement = try await client.functions.invoke(
+            "creer-lien-paiement",
+            options: FunctionInvokeOptions(body: body)
+        )
+        return res
+    }
 }
