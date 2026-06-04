@@ -59,86 +59,38 @@ struct ProductionView: View {
     // MARK: - Sections à l'écran
 
     private var syntheseSection: some View {
-        ProdCard(titre: "À fabriquer", icone: "hammer.fill", tint: .hkRoseDeep) {
+        ProdCard(titre: "À fabriquer", icone: "hammer.fill", tint: Color.hkRoseDeep) {
             ForEach(synthese) { s in
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Text(s.nom).font(.headline)
-                        Spacer()
-                        Text("× \(s.total)").font(.headline).foregroundStyle(.hkRoseDeep)
-                    }
-                    if s.declinaisons.count > 1 || (s.declinaisons.first?.nom ?? "—") != "—" {
-                        Text(s.declinaisons.map { "\($0.nom) ×\($0.quantite)" }
-                            .joined(separator: "  ·  "))
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-                .padding(.vertical, 2)
+                SyntheseRow(item: s)
             }
         }
     }
 
     private var matieresSection: some View {
-        ProdCard(titre: "Matières à sortir", icone: "shippingbox.fill", tint: .hkSageDeep) {
+        ProdCard(titre: "Matières à sortir", icone: "shippingbox.fill", tint: Color.hkSageDeep) {
             if matieres.isEmpty {
                 Text("Aucune recette renseignée pour ces produits.")
                     .font(.subheadline).foregroundStyle(.secondary)
             } else {
                 ForEach(matieres) { m in
-                    HStack {
-                        Text(m.nom)
-                        Spacer()
-                        Text("\(m.quantite.formatted(.number.precision(.fractionLength(0...2)))) \(m.unite)")
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 1)
+                    MatiereRow(item: m)
                 }
             }
         }
     }
 
     private var detailSection: some View {
-        ProdCard(titre: "Détail par commande", icone: "list.bullet.rectangle.fill", tint: .hkLavender) {
+        ProdCard(titre: "Détail par commande", icone: "list.bullet.rectangle.fill", tint: Color.hkLavender) {
             ForEach(commandesDuJour) { c in
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(store.client(id: c.client_id)?.nom ?? "Sans client").font(.headline)
-                    ForEach(lignesParCommande[c.id] ?? []) { l in
-                        HStack {
-                            Text("• \(store.produit(id: l.produit_id)?.nom ?? "Produit")")
-                            if let d = l.declinaison, !d.isEmpty {
-                                Text("(\(d))").foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Text("× \(l.quantite)").foregroundStyle(.secondary)
-                        }
-                        .font(.subheadline)
-                    }
-                    if !c.allergies.isEmpty {
-                        etiquette("Allergies : \(c.allergies.joined(separator: ", "))", color: .orange)
-                    }
-                    if let g = c.message_gravure, !g.isEmpty {
-                        etiquette("Gravure : « \(g) »", color: .hkRoseDeep)
-                    }
-                    if let col = c.couleur, !col.isEmpty {
-                        etiquette("Couleur : \(col)", color: .hkSageDeep)
-                    }
-                    if let n = c.notes, !n.isEmpty {
-                        Text(n).font(.caption).foregroundStyle(.secondary).italic()
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 6)
+                CommandeBloc(
+                    commande: c,
+                    clientNom: store.client(id: c.client_id)?.nom ?? "Sans client",
+                    lignes: lignesParCommande[c.id] ?? [],
+                    produitNom: { store.produit(id: $0)?.nom ?? "Produit" }
+                )
                 Divider()
             }
         }
-    }
-
-    private func etiquette(_ texte: String, color: Color) -> some View {
-        Text(texte)
-            .font(.caption).bold()
-            .padding(.horizontal, 8).padding(.vertical, 3)
-            .background(Capsule().fill(color.opacity(0.15)))
-            .foregroundStyle(color)
     }
 
     // MARK: - Données calculées
@@ -289,6 +241,114 @@ struct ProductionView: View {
             pdf.closePDF()
         }
         pdfURL = url
+    }
+}
+
+// MARK: - Lignes (sub-Views) pour soulager le type-checker
+
+private struct SyntheseRow: View {
+    let item: ProductionView.SyntheseProduit
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text(item.nom).font(.headline)
+                Spacer()
+                Text("× \(item.total)")
+                    .font(.headline)
+                    .foregroundStyle(Color.hkRoseDeep)
+            }
+            if showDeclinaisons {
+                Text(declinaisonsLabel)
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    private var showDeclinaisons: Bool {
+        if item.declinaisons.count > 1 { return true }
+        return (item.declinaisons.first?.nom ?? "—") != "—"
+    }
+
+    private var declinaisonsLabel: String {
+        item.declinaisons
+            .map { "\($0.nom) ×\($0.quantite)" }
+            .joined(separator: "  ·  ")
+    }
+}
+
+private struct MatiereRow: View {
+    let item: ProductionView.MatiereASortir
+
+    var body: some View {
+        HStack {
+            Text(item.nom)
+            Spacer()
+            Text(quantiteLabel).foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 1)
+    }
+
+    private var quantiteLabel: String {
+        let q = item.quantite.formatted(.number.precision(.fractionLength(0...2)))
+        return "\(q) \(item.unite)"
+    }
+}
+
+private struct CommandeBloc: View {
+    let commande: Commande
+    let clientNom: String
+    let lignes: [CommandeLigne]
+    let produitNom: (UUID) -> String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(clientNom).font(.headline)
+            ForEach(lignes) { l in
+                LigneRow(ligne: l, produitNom: produitNom(l.produit_id))
+            }
+            if !commande.allergies.isEmpty {
+                etiquette("Allergies : \(commande.allergies.joined(separator: ", "))",
+                          color: .orange)
+            }
+            if let g = commande.message_gravure, !g.isEmpty {
+                etiquette("Gravure : « \(g) »", color: Color.hkRoseDeep)
+            }
+            if let col = commande.couleur, !col.isEmpty {
+                etiquette("Couleur : \(col)", color: Color.hkSageDeep)
+            }
+            if let n = commande.notes, !n.isEmpty {
+                Text(n).font(.caption).foregroundStyle(.secondary).italic()
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 6)
+    }
+
+    private func etiquette(_ texte: String, color: Color) -> some View {
+        Text(texte)
+            .font(.caption).bold()
+            .padding(.horizontal, 8).padding(.vertical, 3)
+            .background(Capsule().fill(color.opacity(0.15)))
+            .foregroundStyle(color)
+    }
+}
+
+private struct LigneRow: View {
+    let ligne: CommandeLigne
+    let produitNom: String
+
+    var body: some View {
+        HStack {
+            Text("• \(produitNom)")
+            if let d = ligne.declinaison, !d.isEmpty {
+                Text("(\(d))").foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text("× \(ligne.quantite)").foregroundStyle(.secondary)
+        }
+        .font(.subheadline)
     }
 }
 
