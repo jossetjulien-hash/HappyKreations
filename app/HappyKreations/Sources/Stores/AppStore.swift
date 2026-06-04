@@ -174,7 +174,12 @@ final class AppStore: ObservableObject {
             let produits = channel.postgresChange(AnyAction.self,
                                                   schema: "public", table: "produit")
 
-            await channel.subscribe()
+            do {
+                try await channel.subscribeWithError()
+            } catch {
+                lastError = "realtime: \(error.localizedDescription)"
+                return
+            }
 
             let t1 = Task { [weak self] in
                 for await _ in commandes { await self?.loadCommandes() }
