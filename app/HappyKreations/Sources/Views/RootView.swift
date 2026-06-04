@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppSection: String, CaseIterable, Identifiable {
-    case dashboard, commandes, agenda, stock, recettes, fournisseurs, clients, reglages
+    case dashboard, commandes, agenda, stock, recettes, fournisseurs, clients, stats, reglages
     var id: String { rawValue }
 
     var label: String {
@@ -13,6 +13,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .recettes:     return "Recettes"
         case .fournisseurs: return "Fournisseurs"
         case .clients:      return "Clients"
+        case .stats:        return "Statistiques"
         case .reglages:     return "Réglages"
         }
     }
@@ -26,6 +27,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .recettes:     return "list.clipboard"
         case .fournisseurs: return "person.2"
         case .clients:      return "person.crop.circle"
+        case .stats:        return "chart.bar.xaxis"
         case .reglages:     return "gearshape"
         }
     }
@@ -98,7 +100,7 @@ struct RootView: View {
     }
 
     private let primaryTabs: [AppSection] = [.dashboard, .commandes, .agenda, .stock]
-    private let secondaryTabs: [AppSection] = [.recettes, .fournisseurs, .clients, .reglages]
+    private let secondaryTabs: [AppSection] = [.recettes, .fournisseurs, .clients, .stats, .reglages]
 
     @ViewBuilder
     private func sectionView(_ section: AppSection) -> some View {
@@ -110,6 +112,7 @@ struct RootView: View {
         case .recettes:     RecettesListView()
         case .fournisseurs: FournisseursListView()
         case .clients:      ClientsListView()
+        case .stats:        StatsView()
         case .reglages:     ReglagesView()
         }
     }
