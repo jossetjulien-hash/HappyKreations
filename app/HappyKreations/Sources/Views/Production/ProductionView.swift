@@ -67,8 +67,9 @@ struct ProductionView: View {
                         Spacer()
                         Text("× \(s.total)").font(.headline).foregroundStyle(.hkRoseDeep)
                     }
-                    if s.declinaisons.count > 1 || (s.declinaisons.first?.0 ?? "—") != "—" {
-                        Text(s.declinaisons.map { "\($0.0) ×\($0.1)" }.joined(separator: "  ·  "))
+                    if s.declinaisons.count > 1 || (s.declinaisons.first?.nom ?? "—") != "—" {
+                        Text(s.declinaisons.map { "\($0.nom) ×\($0.quantite)" }
+                            .joined(separator: "  ·  "))
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -155,11 +156,17 @@ struct ProductionView: View {
         commandesDuJour.flatMap { lignesParCommande[$0.id] ?? [] }
     }
 
-    struct SyntheseProduit: Identifiable {
+    struct DecliCount: Identifiable, Hashable {
+        var id: String { nom }
+        let nom: String
+        let quantite: Int
+    }
+
+    struct SyntheseProduit: Identifiable, Hashable {
         let id: UUID
         let nom: String
         let total: Int
-        let declinaisons: [(String, Int)]
+        let declinaisons: [DecliCount]
     }
 
     private var synthese: [SyntheseProduit] {
@@ -170,9 +177,11 @@ struct ProductionView: View {
             let key = (l.declinaison?.isEmpty == false) ? l.declinaison! : "—"
             declis[l.produit_id, default: [:]][key, default: 0] += l.quantite
         }
-        return totals.compactMap { pid, total in
+        return totals.compactMap { pid, total -> SyntheseProduit? in
             guard let p = store.produit(id: pid) else { return nil }
-            let d = (declis[pid] ?? [:]).sorted { $0.key < $1.key }.map { ($0.key, $0.value) }
+            let d = (declis[pid] ?? [:])
+                .sorted { $0.key < $1.key }
+                .map { DecliCount(nom: $0.key, quantite: $0.value) }
             return SyntheseProduit(id: pid, nom: p.nom, total: total, declinaisons: d)
         }
         .sorted { $0.nom < $1.nom }
@@ -349,8 +358,9 @@ struct ProductionSheet: View {
                         Text("\(s.total) ×").font(.system(size: 13, weight: .bold)).frame(width: 40, alignment: .leading)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(s.nom).font(.system(size: 13, weight: .semibold))
-                            if s.declinaisons.count > 1 || (s.declinaisons.first?.0 ?? "—") != "—" {
-                                Text(s.declinaisons.map { "\($0.0) ×\($0.1)" }.joined(separator: "  ·  "))
+                            if s.declinaisons.count > 1 || (s.declinaisons.first?.nom ?? "—") != "—" {
+                                Text(s.declinaisons.map { "\($0.nom) ×\($0.quantite)" }
+                                    .joined(separator: "  ·  "))
                                     .font(.system(size: 11)).foregroundStyle(.secondary)
                             }
                         }
