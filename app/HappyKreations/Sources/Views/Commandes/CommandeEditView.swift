@@ -673,7 +673,7 @@ private struct LigneRow: View {
         VStack(spacing: 6) {
             Picker("Produit", selection: $ligne.produit_id) {
                 ForEach(store.produits) { p in
-                    Text(p.nom).tag(p.id)
+                    Text(p.nom.isEmpty ? "(Produit sans nom)" : p.nom).tag(p.id)
                 }
             }
             .onChange(of: ligne.produit_id) { _, new in

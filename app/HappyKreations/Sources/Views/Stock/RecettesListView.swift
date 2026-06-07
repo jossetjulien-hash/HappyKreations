@@ -12,7 +12,7 @@ struct RecettesListView: View {
                     HStack {
                         ProduitThumb(url: p.photo_url, categorie: p.categorie)
                         VStack(alignment: .leading) {
-                            Text(p.nom).font(.headline)
+                            Text(p.nom.isEmpty ? "(Produit sans nom)" : p.nom).font(.headline)
                             HStack(spacing: 6) {
                                 Text(p.categorie.libelle)
                                 Text("·")
@@ -161,6 +161,7 @@ struct RecetteEditView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button(isNew ? "Créer" : "Enregistrer") { Task { await save() } }
+                    .disabled(draft.nom.trimmingCharacters(in: .whitespaces).isEmpty)
             }
             if isNew {
                 ToolbarItem(placement: .cancellationAction) {
