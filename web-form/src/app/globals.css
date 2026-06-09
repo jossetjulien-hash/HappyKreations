@@ -900,3 +900,15 @@ footer-note { display: none; }
   font-weight: 600;
 }
 .contact-item a:hover { text-decoration: underline; }
+
+.info-paiement {
+  background: color-mix(in srgb, var(--rose) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rose-deep) 30%, transparent);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 14px 0 4px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.info-paiement strong { color: var(--rose-deep); display: block; margin-bottom: 6px; }
+.info-paiement p { margin: 0; }

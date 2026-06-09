@@ -373,6 +373,18 @@ export default function Page() {
         )}
         <p>Acompte à régler maintenant ({acomptePourcent} %) : <strong>{acompte.toFixed(2)} €</strong></p>
         <p className="muted">Le solde sera réglé au retrait.</p>
+        <div className="info-paiement">
+          <strong>🔒 Paiement sécurisé par Stripe</strong>
+          <p>
+            Après avoir cliqué, vous serez redirigé·e vers la page de paiement.
+            Votre banque vous demandera de confirmer la transaction (notification
+            dans son application, SMS, ou Face/Touch ID). C’est une étape normale
+            et obligatoire — gardez votre téléphone à portée de main.
+          </p>
+          <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+            En cas de souci, contactez-nous et nous vous renverrons un lien de paiement.
+          </p>
+        </div>
         {error && <p className="error">{error}</p>}
         <button type="button" onClick={submit} disabled={loading} style={{ marginTop: 12 }}>
           {loading ? "Redirection vers Stripe…" : "Régler l’acompte"}
