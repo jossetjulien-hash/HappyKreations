@@ -36,6 +36,8 @@ struct Produit: Codable, Identifiable, Hashable {
     var visible_formulaire: Bool
     var actif: Bool
     var photo_url: String?
+    var qte_min: Int?
+    var qte_max: Int?
     var created_at: Date?
 
     static func new() -> Produit {
@@ -46,17 +48,19 @@ struct Produit: Codable, Identifiable, Hashable {
 
     init(id: UUID, nom: String, categorie: CategorieProduit, prix_vente: Double,
          declinaisons: [String], visible_formulaire: Bool, actif: Bool,
-         photo_url: String? = nil, created_at: Date? = nil) {
+         photo_url: String? = nil, qte_min: Int? = nil, qte_max: Int? = nil,
+         created_at: Date? = nil) {
         self.id = id; self.nom = nom; self.categorie = categorie
         self.prix_vente = prix_vente; self.declinaisons = declinaisons
         self.visible_formulaire = visible_formulaire; self.actif = actif
         self.photo_url = photo_url
+        self.qte_min = qte_min; self.qte_max = qte_max
         self.created_at = created_at
     }
 
     enum CodingKeys: String, CodingKey {
         case id, nom, categorie, prix_vente, declinaisons, visible_formulaire,
-             actif, photo_url, created_at
+             actif, photo_url, qte_min, qte_max, created_at
     }
 
     init(from decoder: Decoder) throws {
@@ -69,6 +73,8 @@ struct Produit: Codable, Identifiable, Hashable {
         visible_formulaire = try c.decode(Bool.self, forKey: .visible_formulaire)
         actif = try c.decode(Bool.self, forKey: .actif)
         photo_url = try c.decodeIfPresent(String.self, forKey: .photo_url)
+        qte_min = try c.decodeIfPresent(Int.self, forKey: .qte_min)
+        qte_max = try c.decodeIfPresent(Int.self, forKey: .qte_max)
         created_at = try c.decodeIfPresent(Date.self, forKey: .created_at)
     }
 }

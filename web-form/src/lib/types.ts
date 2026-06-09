@@ -7,6 +7,8 @@ export interface Produit {
   visible_formulaire: boolean;
   actif: boolean;
   photo_url: string | null;
+  qte_min: number | null;
+  qte_max: number | null;
 }
 
 export interface CapaciteJour {

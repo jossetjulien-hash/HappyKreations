@@ -108,6 +108,30 @@ struct RecetteEditView: View {
                 Toggle("Visible dans le formulaire", isOn: $draft.visible_formulaire)
                 Toggle("Actif", isOn: $draft.actif)
             }
+            Section {
+                Toggle("Quantité minimum imposée", isOn: Binding(
+                    get: { draft.qte_min != nil },
+                    set: { draft.qte_min = $0 ? max(1, draft.qte_min ?? 1) : nil }))
+                if draft.qte_min != nil {
+                    Stepper("Minimum : \(draft.qte_min ?? 1)",
+                            value: Binding(get: { draft.qte_min ?? 1 },
+                                           set: { draft.qte_min = $0 }),
+                            in: 1...10_000)
+                }
+                Toggle("Quantité maximum imposée", isOn: Binding(
+                    get: { draft.qte_max != nil },
+                    set: { draft.qte_max = $0 ? max(draft.qte_min ?? 1, draft.qte_max ?? 1) : nil }))
+                if draft.qte_max != nil {
+                    Stepper("Maximum : \(draft.qte_max ?? 1)",
+                            value: Binding(get: { draft.qte_max ?? 1 },
+                                           set: { draft.qte_max = $0 }),
+                            in: max(1, draft.qte_min ?? 1)...10_000)
+                }
+            } header: {
+                Text("Quantité commandable")
+            } footer: {
+                Text("Appliqué sur le formulaire web : le client ne peut pas commander en dessous du minimum ni au-dessus du maximum.")
+            }
             Section("Déclinaisons") {
                 ForEach(draft.declinaisons, id: \.self) { d in Text(d) }
                     .onDelete { idx in

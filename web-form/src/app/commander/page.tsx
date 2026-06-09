@@ -136,7 +136,15 @@ export default function Page() {
   function setQte(p: Produit, delta: number) {
     setQuantites((q) => {
       const cur = q[p.id] ?? { qte: 0, decli: p.declinaisons[0] };
-      const next = Math.max(0, cur.qte + delta);
+      let next = cur.qte + delta;
+      // Premier ajout : on passe directement au minimum imposé (si défini)
+      // pour éviter au client d'avoir à cliquer 50 fois sur « + ».
+      if (cur.qte === 0 && delta > 0 && p.qte_min && p.qte_min > 1) {
+        next = p.qte_min;
+      }
+      // Plafond : on ne dépasse jamais qte_max
+      if (p.qte_max != null) next = Math.min(next, p.qte_max);
+      next = Math.max(0, next);
       return { ...q, [p.id]: { ...cur, qte: next } };
     });
   }
@@ -150,6 +158,17 @@ export default function Page() {
     if (!client.email && !client.telephone) return setError("Email ou téléphone requis.");
     if (!dateRetrait) return setError("Choisissez une date de retrait.");
     if (lignes.length === 0) return setError("Sélectionnez au moins un produit.");
+    // Contrôle min/max par produit
+    for (const l of lignes) {
+      const p = produits.find((pp) => pp.id === l.produit_id);
+      if (!p) continue;
+      if (p.qte_min != null && l.quantite < p.qte_min) {
+        return setError(`${p.nom} : minimum ${p.qte_min} ${p.categorie === "cornet" ? "cornets" : "pièces"}.`);
+      }
+      if (p.qte_max != null && l.quantite > p.qte_max) {
+        return setError(`${p.nom} : maximum ${p.qte_max} ${p.categorie === "cornet" ? "cornets" : "pièces"}.`);
+      }
+    }
 
     setLoading(true);
     try {
@@ -227,6 +246,15 @@ export default function Page() {
                 <div className="muted">
                   {p.prix_vente.toFixed(2)} € · {p.categorie}
                 </div>
+                {(p.qte_min != null || p.qte_max != null) && (
+                  <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                    {p.qte_min != null && p.qte_max != null
+                      ? `Commande de ${p.qte_min} à ${p.qte_max} ${p.categorie === "cornet" ? "cornets" : "pièces"}`
+                      : p.qte_min != null
+                        ? `Minimum ${p.qte_min} ${p.categorie === "cornet" ? "cornets" : "pièces"}`
+                        : `Maximum ${p.qte_max} ${p.categorie === "cornet" ? "cornets" : "pièces"}`}
+                  </div>
+                )}
                 {p.declinaisons.length > 0 && (
                   <select
                     value={quantites[p.id]?.decli ?? p.declinaisons[0]}
@@ -240,7 +268,8 @@ export default function Page() {
               <div className="qte-control">
                 <button type="button" onClick={() => setQte(p, -1)} disabled={q === 0}>−</button>
                 <span style={{ minWidth: 24, textAlign: "center" }}>{q}</span>
-                <button type="button" onClick={() => setQte(p, +1)}>+</button>
+                <button type="button" onClick={() => setQte(p, +1)}
+                        disabled={p.qte_max != null && q >= p.qte_max}>+</button>
               </div>
             </div>
           );

@@ -113,12 +113,19 @@ Deno.serve(async (req) => {
     // 3. Récupérer les prix actuels des produits (jamais faire confiance au client)
     const produitIds = lignes.map((l) => l.produit_id);
     const { data: produits, error: prodErr } = await db.from("produit")
-      .select("id, nom, prix_vente, visible_formulaire, actif").in("id", produitIds);
+      .select("id, nom, prix_vente, visible_formulaire, actif, qte_min, qte_max").in("id", produitIds);
     if (prodErr) throw prodErr;
     const lignesValidees = lignes.map((l) => {
       const p = produits?.find((pp) => pp.id === l.produit_id);
       if (!p || !p.visible_formulaire || !p.actif) {
         throw new Error(`produit_indisponible:${l.produit_id}`);
+      }
+      const qte = Number(l.quantite);
+      if (p.qte_min != null && qte < Number(p.qte_min)) {
+        throw new Error(`qte_min:${p.nom}:${p.qte_min}`);
+      }
+      if (p.qte_max != null && qte > Number(p.qte_max)) {
+        throw new Error(`qte_max:${p.nom}:${p.qte_max}`);
       }
       return { ...l, prix_unitaire: Number(p.prix_vente), nom: p.nom };
     });
