@@ -579,10 +579,53 @@ struct CommandeEditView: View {
                 errorText = "URL de paiement invalide."
                 return
             }
+            // Si le client a un email → ouvre directement Mail avec un brouillon
+            // pré-rempli (destinataire + corps avec le lien). Sinon on retombe
+            // sur la share sheet (Messages, WhatsApp, copie…).
+            let client = store.client(id: draft.client_id)
+            if let email = client?.email?.trimmingCharacters(in: .whitespaces),
+               !email.isEmpty,
+               ouvrirMailAvecLien(url: url, motif: motif, client: client, email: email) {
+                return
+            }
             lienAPartager = url
         } catch {
             errorText = "Génération du lien : \(error.localizedDescription)"
         }
+    }
+
+    /// Construit un mailto: et l'ouvre dans l'app Mail. Retourne `false` si
+    /// l'ouverture échoue → appelant retombe sur la share sheet.
+    private func ouvrirMailAvecLien(url: URL, motif: Repository.MotifPaiement,
+                                    client: Client?, email: String) -> Bool {
+        let libelle = motif == .acompte ? "acompte" : motif == .solde ? "solde" : "paiement"
+        let prenom = client?.nom.split(separator: " ").first.map(String.init) ?? ""
+        let salutation = prenom.isEmpty ? "Bonjour," : "Bonjour \(prenom),"
+        let subject = "Lien de paiement HappyKreations — \(libelle)"
+        let body = """
+        \(salutation)
+
+        Voici votre lien de paiement sécurisé pour votre \(libelle) :
+        \(url.absoluteString)
+
+        À très vite,
+        HappyKreations
+        """
+        var comps = URLComponents()
+        comps.scheme = "mailto"
+        comps.path = email
+        comps.queryItems = [
+            URLQueryItem(name: "subject", value: subject),
+            URLQueryItem(name: "body", value: body),
+        ]
+        guard let mailto = comps.url else { return false }
+        #if os(iOS)
+        guard UIApplication.shared.canOpenURL(mailto) else { return false }
+        UIApplication.shared.open(mailto)
+        return true
+        #else
+        return NSWorkspace.shared.open(mailto)
+        #endif
     }
 }
 
