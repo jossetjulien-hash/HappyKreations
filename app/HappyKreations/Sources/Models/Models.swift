@@ -18,10 +18,37 @@ struct Client: Codable, Identifiable, Hashable {
     var email: String?
     var messenger: String?
     var notes: String?
+    var archived: Bool
     var created_at: Date?
 
     static func new(nom: String = "") -> Client {
-        Client(id: UUID(), nom: nom)
+        Client(id: UUID(), nom: nom, archived: false)
+    }
+
+    init(id: UUID, nom: String, telephone: String? = nil, email: String? = nil,
+         messenger: String? = nil, notes: String? = nil, archived: Bool = false,
+         created_at: Date? = nil) {
+        self.id = id; self.nom = nom
+        self.telephone = telephone; self.email = email
+        self.messenger = messenger; self.notes = notes
+        self.archived = archived
+        self.created_at = created_at
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, nom, telephone, email, messenger, notes, archived, created_at
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        nom = try c.decode(String.self, forKey: .nom)
+        telephone = try c.decodeIfPresent(String.self, forKey: .telephone)
+        email = try c.decodeIfPresent(String.self, forKey: .email)
+        messenger = try c.decodeIfPresent(String.self, forKey: .messenger)
+        notes = try c.decodeIfPresent(String.self, forKey: .notes)
+        archived = try c.decodeIfPresent(Bool.self, forKey: .archived) ?? false
+        created_at = try c.decodeIfPresent(Date.self, forKey: .created_at)
     }
 }
 
