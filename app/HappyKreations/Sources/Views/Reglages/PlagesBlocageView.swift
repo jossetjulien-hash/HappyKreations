@@ -78,6 +78,9 @@ struct PlageEditView: View {
     @Environment(\.dismiss) private var dismiss
     @State var draft: PlageBlocage
     @State private var errorText: String?
+    /// Dernier message auto-généré : sert à détecter si le user a customisé le
+    /// message (auquel cas on arrête de le réécrire automatiquement).
+    @State private var messageAutoPrecedent: String = ""
     private let isNew: Bool
 
     init(initial: PlageBlocage) {
@@ -97,16 +100,24 @@ struct PlageEditView: View {
                            displayedComponents: .date)
             }
             Section {
-                TextField("Ex. Je suis en congé jusqu'au 5 août, reprise des commandes le 6 ✿",
+                TextField("Message client",
                           text: Binding(
                             get: { draft.message_client ?? "" },
                             set: { draft.message_client = $0.isEmpty ? nil : $0 }),
                           axis: .vertical)
                     .lineLimit(3...6)
+                Button {
+                    let msg = messageAuto(debut: draft.date_debut, fin: draft.date_fin)
+                    draft.message_client = msg
+                    messageAutoPrecedent = msg
+                } label: {
+                    Label("Régénérer depuis les dates", systemImage: "wand.and.stars")
+                        .font(.caption)
+                }
             } header: {
                 Text("Message au client")
             } footer: {
-                Text("Affiché en bannière sur le formulaire pendant la période. Laisser vide = pas de bannière (seules les dates sont grisées).")
+                Text("Pré-rempli automatiquement à partir des dates. Tu peux le personnaliser ; il restera ta version. Laisser vide = pas de bannière (seules les dates sont grisées).")
             }
             Section {
                 Toggle("Plage active", isOn: $draft.actif)
@@ -114,6 +125,15 @@ struct PlageEditView: View {
                 Text("Désactive temporairement la plage sans la supprimer.")
             }
         }
+        .onAppear {
+            let msg = messageAuto(debut: draft.date_debut, fin: draft.date_fin)
+            if (draft.message_client ?? "").isEmpty {
+                draft.message_client = msg
+            }
+            messageAutoPrecedent = msg
+        }
+        .onChange(of: draft.date_debut) { _, _ in regenererSiAuto() }
+        .onChange(of: draft.date_fin) { _, _ in regenererSiAuto() }
         .formStyle(.grouped)
         .navigationTitle(isNew ? "Nouvelle plage" : draft.libelle)
         .toolbar {
@@ -136,5 +156,38 @@ struct PlageEditView: View {
             await store.loadPlagesBlocage()
             dismiss()
         } catch { errorText = error.localizedDescription }
+    }
+
+    /// Génère un message naturel en français à partir des dates de la plage.
+    /// Ex. « Je suis en congé du 10 au 17 juin, reprise des commandes le
+    /// 18 juin ✿ ». Si le mois change, on précise le mois de chaque date.
+    private func messageAuto(debut: Date, fin: Date) -> String {
+        let cal = Calendar(identifier: .gregorian)
+        let fmtLong = DateFormatter()
+        fmtLong.locale = Locale(identifier: "fr_FR")
+        fmtLong.dateFormat = "d MMMM"
+        let fmtJour = DateFormatter()
+        fmtJour.locale = Locale(identifier: "fr_FR")
+        fmtJour.dateFormat = "d"
+
+        let reprise = cal.date(byAdding: .day, value: 1, to: fin) ?? fin
+        let memeMois = cal.component(.month, from: debut) == cal.component(.month, from: fin)
+                    && cal.component(.year, from: debut) == cal.component(.year, from: fin)
+        let periode = memeMois
+            ? "du \(fmtJour.string(from: debut)) au \(fmtLong.string(from: fin))"
+            : "du \(fmtLong.string(from: debut)) au \(fmtLong.string(from: fin))"
+        let dateReprise = fmtLong.string(from: reprise)
+        return "Je suis en congé \(periode), reprise des commandes le \(dateReprise) ✿"
+    }
+
+    /// Régénère le message si le user ne l'a pas customisé (= il est resté
+    /// identique au dernier auto-généré).
+    private func regenererSiAuto() {
+        let nouveau = messageAuto(debut: draft.date_debut, fin: draft.date_fin)
+        let actuel = draft.message_client ?? ""
+        if actuel.isEmpty || actuel == messageAutoPrecedent {
+            draft.message_client = nouveau
+        }
+        messageAutoPrecedent = nouveau
     }
 }
