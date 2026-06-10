@@ -1,4 +1,9 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
 struct ClientsListView: View {
     @EnvironmentObject var store: AppStore
@@ -70,6 +75,7 @@ struct ClientEditView: View {
     /// client qui vient d'être créé.
     var onCreated: ((Client) -> Void)? = nil
     @State private var errorText: String?
+    @State private var partageFormulaire = false
 
     init(clientId: UUID, draft: Client? = nil, isNew: Bool = false,
          onCreated: ((Client) -> Void)? = nil) {
@@ -99,6 +105,20 @@ struct ClientEditView: View {
                 ).lineLimit(2...8)
             }
             if !isNew {
+                Section {
+                    Button {
+                        partagerFormulaire()
+                    } label: {
+                        Label("Envoyer le formulaire de commande", systemImage: "square.and.arrow.up")
+                    }
+                } header: {
+                    Text("Formulaire de commande")
+                } footer: {
+                    Text(draft.email?.isEmpty == false
+                         ? "Ouvre un e-mail pré-rempli vers \(draft.email ?? "") avec le lien du formulaire."
+                         : "Ouvre la feuille de partage (SMS, WhatsApp…) avec le lien du formulaire.")
+                }
+
                 let cmds = store.commandes.filter { $0.client_id == clientId }
                 Section("Historique") {
                     if cmds.isEmpty { Text("Aucune commande").foregroundStyle(.secondary) }
@@ -122,9 +142,57 @@ struct ClientEditView: View {
                 }
             }
         }
+        .sheet(isPresented: $partageFormulaire) {
+            ShareSheet(items: [
+                "Bonjour \(draft.nom.split(separator: " ").first.map(String.init) ?? ""), passez votre commande HappyKreations ici 🍫 :",
+                AppConfig.formulaireURL,
+            ])
+            .presentationDetents([.medium])
+        }
         .alert("Erreur", isPresented: .init(get: { errorText != nil }, set: { _ in errorText = nil })) {
             Button("OK", role: .cancel) {}
         } message: { Text(errorText ?? "") }
+    }
+
+    /// Si le client a un e-mail → ouvre Mail pré-rempli. Sinon → share sheet.
+    private func partagerFormulaire() {
+        let url = AppConfig.formulaireURL
+        if let email = draft.email?.trimmingCharacters(in: .whitespaces),
+           !email.isEmpty,
+           ouvrirMailFormulaire(url: url, email: email) {
+            return
+        }
+        partageFormulaire = true
+    }
+
+    private func ouvrirMailFormulaire(url: URL, email: String) -> Bool {
+        let prenom = draft.nom.split(separator: " ").first.map(String.init) ?? ""
+        let salutation = prenom.isEmpty ? "Bonjour," : "Bonjour \(prenom),"
+        let subject = "Votre commande HappyKreations 🍫"
+        let body = """
+        \(salutation)
+
+        Pour passer votre commande et régler l'acompte en ligne, c'est par ici :
+        \(url.absoluteString)
+
+        À très vite,
+        HappyKreations
+        """
+        var comps = URLComponents()
+        comps.scheme = "mailto"
+        comps.path = email
+        comps.queryItems = [
+            URLQueryItem(name: "subject", value: subject),
+            URLQueryItem(name: "body", value: body),
+        ]
+        guard let mailto = comps.url else { return false }
+        #if os(iOS)
+        guard UIApplication.shared.canOpenURL(mailto) else { return false }
+        UIApplication.shared.open(mailto)
+        return true
+        #else
+        return NSWorkspace.shared.open(mailto)
+        #endif
     }
 
     private func save() async {
