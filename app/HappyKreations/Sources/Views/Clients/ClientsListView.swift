@@ -143,17 +143,21 @@ struct ClientEditView: View {
         }
         .confirmationDialog("Envoyer le formulaire",
                             isPresented: $choixCanal, titleVisibility: .visible) {
-            if let email = draft.email?.trimmingCharacters(in: .whitespaces), !email.isEmpty {
-                Button("E-mail (\(email))") { ouvrirMail(email: email) }
+            let email = draft.email?.trimmingCharacters(in: .whitespaces) ?? ""
+            let tel = telephoneNettoye
+            Button(email.isEmpty ? "E-mail…" : "E-mail (\(email))") {
+                ouvrirMail(email: email)
             }
-            if let tel = telephoneNettoye {
-                Button("SMS (\(draft.telephone ?? ""))") { ouvrirSMS(tel: tel) }
-                Button("WhatsApp") { ouvrirWhatsApp(tel: tel) }
+            Button(tel == nil ? "SMS…" : "SMS (\(draft.telephone ?? ""))") {
+                ouvrirSMS(tel: tel ?? "")
             }
+            Button("WhatsApp") { ouvrirWhatsApp(tel: tel ?? "") }
             Button("Autre application…") { partageFormulaire = true }
             Button("Annuler", role: .cancel) {}
         } message: {
-            Text("Choisis comment envoyer le lien à \(draft.nom).")
+            Text(draft.nom.isEmpty
+                 ? "Choisis comment envoyer le lien."
+                 : "Choisis comment envoyer le lien à \(draft.nom).")
         }
         .sheet(isPresented: $partageFormulaire) {
             ShareSheet(items: [messageFormulaire, AppConfig.formulaireURL])
@@ -202,7 +206,7 @@ struct ClientEditView: View {
         """
         var comps = URLComponents()
         comps.scheme = "mailto"
-        comps.path = email
+        comps.path = email   // peut être vide → Mail ouvre avec destinataire vide
         comps.queryItems = [
             URLQueryItem(name: "subject", value: subject),
             URLQueryItem(name: "body", value: body),
@@ -213,14 +217,18 @@ struct ClientEditView: View {
     private func ouvrirSMS(tel: String) {
         let texte = messageFormulaire.addingPercentEncoding(
             withAllowedCharacters: .urlQueryAllowed) ?? ""
-        // Format iOS : sms:<numero>&body=<texte>
-        if let url = URL(string: "sms:\(tel)&body=\(texte)") { ouvrir(url) }
+        // Si pas de numéro, on ouvre l'app Messages vide (l'utilisateur choisit).
+        let urlStr = tel.isEmpty ? "sms:&body=\(texte)" : "sms:\(tel)&body=\(texte)"
+        if let url = URL(string: urlStr) { ouvrir(url) }
     }
 
     private func ouvrirWhatsApp(tel: String) {
         let texte = messageFormulaire.addingPercentEncoding(
             withAllowedCharacters: .urlQueryAllowed) ?? ""
-        if let url = URL(string: "https://wa.me/\(tel)?text=\(texte)") { ouvrir(url) }
+        // Sans numéro : wa.me/?text= ouvre l'écran « choisir un contact ».
+        let urlStr = tel.isEmpty ? "https://wa.me/?text=\(texte)"
+                                 : "https://wa.me/\(tel)?text=\(texte)"
+        if let url = URL(string: urlStr) { ouvrir(url) }
     }
 
     private func ouvrir(_ url: URL) {

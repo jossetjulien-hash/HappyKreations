@@ -97,20 +97,21 @@ struct CommandeEditView: View {
         }
         .confirmationDialog("Envoyer le lien de paiement",
                             isPresented: $choixCanalPaiement, titleVisibility: .visible) {
-            if let email = clientDeLaCommande?.email?.trimmingCharacters(in: .whitespaces),
-               !email.isEmpty {
-                Button("E-mail (\(email))") { envoyerPaiementMail(email: email) }
+            let email = clientDeLaCommande?.email?.trimmingCharacters(in: .whitespaces) ?? ""
+            let tel = telClientNettoye
+            Button(email.isEmpty ? "E-mail…" : "E-mail (\(email))") {
+                envoyerPaiementMail(email: email)
             }
-            if let tel = telClientNettoye {
-                Button("SMS (\(clientDeLaCommande?.telephone ?? ""))") { envoyerPaiementSMS(tel: tel) }
-                Button("WhatsApp") { envoyerPaiementWhatsApp(tel: tel) }
+            Button(tel == nil ? "SMS…" : "SMS (\(clientDeLaCommande?.telephone ?? ""))") {
+                envoyerPaiementSMS(tel: tel ?? "")
             }
+            Button("WhatsApp") { envoyerPaiementWhatsApp(tel: tel ?? "") }
             Button("Autre application…") {
                 lienAPartager = lienPaiementPret?.url
             }
             Button("Annuler", role: .cancel) {}
         } message: {
-            if let nom = clientDeLaCommande?.nom { Text("Envoi à \(nom).") }
+            if let nom = clientDeLaCommande?.nom, !nom.isEmpty { Text("Envoi à \(nom).") }
             else { Text("Choisis comment envoyer le lien.") }
         }
         .sheet(item: $nouveauClient) { c in
@@ -826,14 +827,17 @@ struct CommandeEditView: View {
         guard let (url, motif) = lienPaiementPret else { return }
         let texte = messagePaiement(motif: motif, url: url)
             .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        if let u = URL(string: "sms:\(tel)&body=\(texte)") { ouvrirURL(u) }
+        let urlStr = tel.isEmpty ? "sms:&body=\(texte)" : "sms:\(tel)&body=\(texte)"
+        if let u = URL(string: urlStr) { ouvrirURL(u) }
     }
 
     private func envoyerPaiementWhatsApp(tel: String) {
         guard let (url, motif) = lienPaiementPret else { return }
         let texte = messagePaiement(motif: motif, url: url)
             .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        if let u = URL(string: "https://wa.me/\(tel)?text=\(texte)") { ouvrirURL(u) }
+        let urlStr = tel.isEmpty ? "https://wa.me/?text=\(texte)"
+                                 : "https://wa.me/\(tel)?text=\(texte)"
+        if let u = URL(string: urlStr) { ouvrirURL(u) }
     }
 
     private func ouvrirURL(_ url: URL) {
