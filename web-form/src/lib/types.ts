@@ -18,6 +18,7 @@ export interface ZoneLivraison {
   description: string | null;
   ordre: number;
   actif: boolean;
+  codes_postaux: string[];
 }
 
 export interface CapaciteJour {

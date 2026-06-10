@@ -912,3 +912,31 @@ footer-note { display: none; }
 }
 .info-paiement strong { color: var(--rose-deep); display: block; margin-bottom: 6px; }
 .info-paiement p { margin: 0; }
+
+.adresse-suggestions {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 6px;
+  background: var(--cream, #fff8f3);
+  border: 1px solid var(--hair, #e4d8cc);
+  border-radius: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+  position: relative;
+  z-index: 5;
+}
+.adresse-suggestions li { margin: 0; }
+.adresse-suggestions button {
+  width: 100%;
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink, #2b1d1a);
+}
+.adresse-suggestions button:hover {
+  background: color-mix(in srgb, var(--rose) 18%, transparent);
+}

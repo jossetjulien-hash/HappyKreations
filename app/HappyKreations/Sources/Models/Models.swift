@@ -266,6 +266,9 @@ struct Commande: Codable, Identifiable, Hashable {
     var mode_remise: ModeRemise
     var zone_livraison_id: UUID?
     var frais_livraison: Double
+    var adresse_livraison: String?
+    var latitude: Double?
+    var longitude: Double?
     var created_by: UUID?
     var created_at: Date?
     var updated_at: Date?
@@ -301,6 +304,7 @@ struct Commande: Codable, Identifiable, Hashable {
              photo_ref_url, photo_resultat_url, numero_facture, rappel_envoye_at,
              email_confirmation_ouvert_at, email_rappel_ouvert_at,
              mode_remise, zone_livraison_id, frais_livraison,
+             adresse_livraison, latitude, longitude,
              created_by, created_at, updated_at
     }
 
@@ -328,6 +332,9 @@ struct Commande: Codable, Identifiable, Hashable {
         mode_remise = try c.decodeIfPresent(ModeRemise.self, forKey: .mode_remise) ?? .retrait
         zone_livraison_id = try c.decodeIfPresent(UUID.self, forKey: .zone_livraison_id)
         frais_livraison = c.decodeDoubleIfPresent(.frais_livraison) ?? 0
+        adresse_livraison = try c.decodeIfPresent(String.self, forKey: .adresse_livraison)
+        latitude = c.decodeDoubleIfPresent(.latitude)
+        longitude = c.decodeDoubleIfPresent(.longitude)
         created_by = try c.decodeIfPresent(UUID.self, forKey: .created_by)
         created_at = try c.decodeIfPresent(Date.self, forKey: .created_at)
         updated_at = try c.decodeIfPresent(Date.self, forKey: .updated_at)
@@ -579,23 +586,26 @@ struct ZoneLivraison: Codable, Identifiable, Hashable {
     var description: String?
     var ordre: Int
     var actif: Bool
+    var codes_postaux: [String]
     var created_at: Date?
 
     static func new() -> ZoneLivraison {
         ZoneLivraison(id: UUID(), nom: "", tarif: 0, description: nil,
-                      ordre: 0, actif: true)
+                      ordre: 0, actif: true, codes_postaux: [])
     }
 
     init(id: UUID, nom: String, tarif: Double, description: String?,
-         ordre: Int, actif: Bool, created_at: Date? = nil) {
+         ordre: Int, actif: Bool, codes_postaux: [String] = [],
+         created_at: Date? = nil) {
         self.id = id; self.nom = nom; self.tarif = tarif
         self.description = description
         self.ordre = ordre; self.actif = actif
+        self.codes_postaux = codes_postaux
         self.created_at = created_at
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, nom, tarif, description, ordre, actif, created_at
+        case id, nom, tarif, description, ordre, actif, codes_postaux, created_at
     }
 
     init(from decoder: Decoder) throws {
@@ -606,6 +616,7 @@ struct ZoneLivraison: Codable, Identifiable, Hashable {
         description = try c.decodeIfPresent(String.self, forKey: .description)
         ordre = try c.decodeIfPresent(Int.self, forKey: .ordre) ?? 0
         actif = try c.decode(Bool.self, forKey: .actif)
+        codes_postaux = try c.decodeIfPresent([String].self, forKey: .codes_postaux) ?? []
         created_at = try c.decodeIfPresent(Date.self, forKey: .created_at)
     }
 }

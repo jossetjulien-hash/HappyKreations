@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import MapKit
 #if os(macOS)
 import AppKit
 #else
@@ -29,6 +30,10 @@ struct CommandeEditView: View {
     @State private var generationLien = false
     @State private var lienAPartager: URL?
     @State private var nouveauClient: Client?
+    @State private var adresseQuery: String = ""
+    @State private var adresseSuggestions: [BANAddressService.Suggestion] = []
+    @State private var adresseRechercheEnCours = false
+    @State private var adresseSearchTask: Task<Void, Never>?
 
     init(commandeId: UUID, draft: Commande? = nil, isNew: Bool = false,
          onCreated: ((Commande) -> Void)? = nil) {
@@ -253,31 +258,138 @@ struct CommandeEditView: View {
                 if new == .retrait {
                     draft.zone_livraison_id = nil
                     draft.frais_livraison = 0
+                    draft.adresse_livraison = nil
+                    draft.latitude = nil
+                    draft.longitude = nil
+                    adresseQuery = ""
+                    adresseSuggestions = []
                 }
             }
             if draft.mode_remise == .livraison {
-                let zonesActives = store.zonesLivraison.filter { $0.actif && $0.tarif > 0 }
-                Picker("Zone", selection: $draft.zone_livraison_id) {
-                    Text("— Choisir —").tag(UUID?.none)
-                    ForEach(zonesActives) { z in
-                        HStack {
-                            Text(z.nom)
-                            Spacer()
-                            Text(z.tarif, format: .currency(code: "EUR"))
-                                .foregroundStyle(.secondary)
-                        }
-                        .tag(Optional(z.id))
+                adresseInput
+                suggestionsList
+                adresseMap
+                zonePicker
+            }
+        }
+    }
+
+    @ViewBuilder private var adresseInput: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Adresse de livraison").font(.caption).foregroundStyle(.secondary)
+            TextField("Commencez à taper votre adresse…",
+                      text: $adresseQuery, axis: .vertical)
+                .lineLimit(1...3)
+                .textFieldStyle(.roundedBorder)
+                .onChange(of: adresseQuery) { _, new in
+                    // Debounce 300 ms : annule la recherche précédente.
+                    adresseSearchTask?.cancel()
+                    if new.isEmpty {
+                        adresseSuggestions = []
+                        return
+                    }
+                    adresseSearchTask = Task {
+                        try? await Task.sleep(nanoseconds: 300_000_000)
+                        if Task.isCancelled { return }
+                        adresseRechercheEnCours = true
+                        let results = await BANAddressService.search(new)
+                        if Task.isCancelled { return }
+                        adresseSuggestions = results
+                        adresseRechercheEnCours = false
                     }
                 }
-                .onChange(of: draft.zone_livraison_id) { _, new in
-                    draft.frais_livraison = store.zoneLivraison(id: new)?.tarif ?? 0
+            if adresseRechercheEnCours {
+                ProgressView().controlSize(.small)
+            }
+        }
+    }
+
+    @ViewBuilder private var suggestionsList: some View {
+        if !adresseSuggestions.isEmpty {
+            ForEach(adresseSuggestions) { s in
+                Button {
+                    appliquerSuggestion(s)
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(s.label).font(.subheadline).foregroundStyle(.primary)
+                        if let cp = s.postcode, let v = s.city {
+                            Text("\(cp) — \(v)").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
                 }
-                if zonesActives.isEmpty {
-                    Text("Aucune zone configurée. Ajoute-en une dans Réglages → Zones de livraison.")
-                        .font(.caption).foregroundStyle(.secondary)
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    @ViewBuilder private var adresseMap: some View {
+        if let lat = draft.latitude, let lon = draft.longitude {
+            VStack(alignment: .leading, spacing: 6) {
+                Map(initialPosition: .region(MKCoordinateRegion(
+                    center: CLLocationCoordinate2D(latitude: lat, longitude: lon),
+                    span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)))) {
+                    Marker(draft.adresse_livraison ?? "Livraison",
+                           coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon))
+                        .tint(Color.hkRoseDeep)
+                }
+                .frame(height: 160)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                Button {
+                    ouvrirDansPlans(lat: lat, lon: lon)
+                } label: {
+                    Label("Ouvrir l'itinéraire dans Plans", systemImage: "map")
                 }
             }
         }
+    }
+
+    @ViewBuilder private var zonePicker: some View {
+        let zonesActives = store.zonesLivraison.filter { $0.actif && $0.tarif > 0 }
+        Picker("Zone", selection: $draft.zone_livraison_id) {
+            Text("— Choisir —").tag(UUID?.none)
+            ForEach(zonesActives) { z in
+                HStack {
+                    Text(z.nom)
+                    Spacer()
+                    Text(z.tarif, format: .currency(code: "EUR"))
+                        .foregroundStyle(.secondary)
+                }
+                .tag(Optional(z.id))
+            }
+        }
+        .onChange(of: draft.zone_livraison_id) { _, new in
+            draft.frais_livraison = store.zoneLivraison(id: new)?.tarif ?? 0
+        }
+        if zonesActives.isEmpty {
+            Text("Aucune zone configurée. Ajoute-en une dans Réglages → Zones de livraison.")
+                .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
+    private func appliquerSuggestion(_ s: BANAddressService.Suggestion) {
+        draft.adresse_livraison = s.label
+        draft.latitude = s.latitude
+        draft.longitude = s.longitude
+        adresseQuery = s.label
+        adresseSuggestions = []
+        // Détection auto de la zone selon le code postal — modifiable
+        // manuellement ensuite par le user via le picker.
+        if let detected = store.detectZoneLivraison(codePostal: s.postcode) {
+            draft.zone_livraison_id = detected.id
+            draft.frais_livraison = detected.tarif
+        }
+    }
+
+    private func ouvrirDansPlans(lat: Double, lon: Double) {
+        // URL universelle Apple Plans : ouvre l'app sur iOS/macOS avec
+        // mode itinéraire en voiture depuis la position actuelle.
+        let urlStr = "http://maps.apple.com/?daddr=\(lat),\(lon)&dirflg=d"
+        guard let url = URL(string: urlStr) else { return }
+        #if os(iOS)
+        UIApplication.shared.open(url)
+        #else
+        NSWorkspace.shared.open(url)
+        #endif
     }
 
     private var sectionTotaux: some View {
@@ -434,6 +546,7 @@ struct CommandeEditView: View {
         if let c = store.commandes.first(where: { $0.id == commandeId }) {
             draft = c
         }
+        adresseQuery = draft.adresse_livraison ?? ""
         do {
             lignes = try await store.repo.lignes(forCommande: commandeId)
             paiements = try await store.repo.paiements(forCommande: commandeId)

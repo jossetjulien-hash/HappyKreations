@@ -16,6 +16,12 @@ export default function Page() {
   const [zones, setZones] = useState<ZoneLivraison[]>([]);
   const [modeRemise, setModeRemise] = useState<"retrait" | "livraison">("retrait");
   const [zoneId, setZoneId] = useState<string | null>(null);
+  const [adresseLivraison, setAdresseLivraison] = useState("");
+  const [adresseCoords, setAdresseCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [adresseSuggestions, setAdresseSuggestions] = useState<Array<{
+    id: string; label: string; postcode: string; city: string; lat: number; lon: number;
+  }>>([]);
+  const [adresseRecherche, setAdresseRecherche] = useState(false);
   const [quantites, setQuantites] = useState<Record<string, { qte: number; decli?: string }>>({});
   const [dateRetrait, setDateRetrait] = useState<string | null>(null);
   const [typeEvenement, setTypeEvenement] = useState("");
@@ -60,6 +66,47 @@ export default function Page() {
     } finally {
       setVerifCode(false);
     }
+  }
+
+  // Debounce BAN address autocomplete
+  useEffect(() => {
+    if (modeRemise !== "livraison") { setAdresseSuggestions([]); return; }
+    const q = adresseLivraison.trim();
+    if (q.length < 3) { setAdresseSuggestions([]); return; }
+    setAdresseRecherche(true);
+    const timer = setTimeout(async () => {
+      try {
+        const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=6&lat=-21.115&lon=55.536`;
+        const r = await fetch(url);
+        const j = await r.json();
+        const feats = (j?.features ?? []) as Array<{
+          properties: { id: string; label: string; postcode?: string; city?: string };
+          geometry: { coordinates: [number, number] };
+        }>;
+        const filtered = feats
+          .filter((f) => f.properties.postcode?.startsWith("974"))
+          .map((f) => ({
+            id: f.properties.id,
+            label: f.properties.label,
+            postcode: f.properties.postcode ?? "",
+            city: f.properties.city ?? "",
+            lon: f.geometry.coordinates[0],
+            lat: f.geometry.coordinates[1],
+          }));
+        setAdresseSuggestions(filtered);
+      } catch { /* ignore */ }
+      finally { setAdresseRecherche(false); }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [adresseLivraison, modeRemise]);
+
+  function appliquerSuggestionAdresse(s: { label: string; postcode: string; lat: number; lon: number }) {
+    setAdresseLivraison(s.label);
+    setAdresseCoords({ lat: s.lat, lon: s.lon });
+    setAdresseSuggestions([]);
+    // Détection auto de la zone selon le code postal — modifiable manuellement
+    const z = zones.find((zz) => zz.codes_postaux?.includes(s.postcode));
+    if (z) setZoneId(z.id);
   }
 
   function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -169,6 +216,9 @@ export default function Page() {
     if (modeRemise === "livraison" && !zoneId) {
       return setError("Choisissez votre zone de livraison.");
     }
+    if (modeRemise === "livraison" && !adresseLivraison.trim()) {
+      return setError("Renseignez votre adresse de livraison.");
+    }
     // Contrôle min/max par produit
     for (const l of lignes) {
       const p = produits.find((pp) => pp.id === l.produit_id);
@@ -204,6 +254,9 @@ export default function Page() {
           code_promo_id: codeApplique?.id ?? null,
           mode_remise: modeRemise,
           zone_livraison_id: modeRemise === "livraison" ? zoneId : null,
+          adresse_livraison: modeRemise === "livraison" ? adresseLivraison : null,
+          latitude: modeRemise === "livraison" ? adresseCoords?.lat ?? null : null,
+          longitude: modeRemise === "livraison" ? adresseCoords?.lon ?? null : null,
           origin: window.location.origin,
         }),
       });
@@ -390,6 +443,35 @@ export default function Page() {
           </div>
           {modeRemise === "livraison" && (
             <>
+              <label style={{ marginTop: 12 }}>Adresse de livraison</label>
+              <div style={{ position: "relative" }}>
+                <input
+                  value={adresseLivraison}
+                  onChange={(e) => {
+                    setAdresseLivraison(e.target.value);
+                    setAdresseCoords(null);
+                  }}
+                  placeholder="Commencez à taper votre adresse…"
+                  autoComplete="off"
+                />
+                {adresseSuggestions.length > 0 && (
+                  <ul className="adresse-suggestions">
+                    {adresseSuggestions.map((s) => (
+                      <li key={s.id}>
+                        <button type="button"
+                          onClick={() => appliquerSuggestionAdresse(s)}>
+                          <strong>{s.label}</strong>
+                          <span className="muted"> · {s.postcode} {s.city}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {adresseRecherche && (
+                  <span className="muted" style={{ fontSize: 12 }}>Recherche…</span>
+                )}
+              </div>
+
               <label style={{ marginTop: 12 }}>Votre zone</label>
               <select value={zoneId ?? ""} onChange={(e) => setZoneId(e.target.value || null)}>
                 <option value="">— Choisissez votre zone —</option>

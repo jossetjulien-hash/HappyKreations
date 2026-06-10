@@ -113,6 +113,25 @@ struct ZoneEditView: View {
                     Text("€")
                 }
             }
+            Section {
+                TextField("Codes postaux (séparés par virgule)",
+                          text: Binding(
+                            get: { draft.codes_postaux.joined(separator: ", ") },
+                            set: { draft.codes_postaux = $0
+                                .split(separator: ",")
+                                .map { $0.trimmingCharacters(in: .whitespaces) }
+                                .filter { !$0.isEmpty }
+                            }),
+                          axis: .vertical)
+                    .lineLimit(1...3)
+                    #if os(iOS)
+                    .keyboardType(.numbersAndPunctuation)
+                    #endif
+            } header: {
+                Text("Détection automatique")
+            } footer: {
+                Text("Ex. « 97400, 97438, 97441 ». Quand un client choisit une adresse avec l'un de ces codes postaux, cette zone est sélectionnée automatiquement.")
+            }
             Section("Affichage") {
                 Toggle("Active (visible sur le formulaire)", isOn: $draft.actif)
                 Stepper("Ordre : \(draft.ordre) (plus petit = en premier)",

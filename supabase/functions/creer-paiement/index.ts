@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
     const {
       client, date_retrait, date_evenement, type_evenement, lignes, notes,
       allergies, message_gravure, couleur, photo_ref_url, code_promo_id,
-      mode_remise, zone_livraison_id, origin,
+      mode_remise, zone_livraison_id, adresse_livraison, latitude, longitude, origin,
     } = body;
     if (!client?.nom || !date_retrait || !Array.isArray(lignes) || lignes.length === 0) {
       return json({ error: "payload_incomplet" }, { status: 400 });
@@ -62,6 +62,10 @@ Deno.serve(async (req) => {
       ? photo_ref_url.slice(0, 500)
       : null;
     const modeRemiseClean = mode_remise === "livraison" ? "livraison" : "retrait";
+    const adresseClean = typeof adresse_livraison === "string"
+      ? adresse_livraison.slice(0, 300) : null;
+    const latClean = typeof latitude === "number" && isFinite(latitude) ? latitude : null;
+    const lonClean = typeof longitude === "number" && isFinite(longitude) ? longitude : null;
 
     // 1. Valider la disponibilité de la date
     const [{ data: capJour }, { data: configRows }] = await Promise.all([
@@ -194,6 +198,9 @@ Deno.serve(async (req) => {
       mode_remise: modeRemiseClean,
       zone_livraison_id: zoneLivraisonIdValide,
       frais_livraison: fraisLivraison,
+      adresse_livraison: modeRemiseClean === "livraison" ? adresseClean : null,
+      latitude: modeRemiseClean === "livraison" ? latClean : null,
+      longitude: modeRemiseClean === "livraison" ? lonClean : null,
     }).select("id").single();
     if (cmdErr) throw cmdErr;
 

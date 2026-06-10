@@ -118,6 +118,17 @@ final class AppStore: ObservableObject {
         return zonesLivraison.first { $0.id == id }
     }
 
+    /// Détecte la zone correspondant à un code postal, parmi les zones actives.
+    /// Renvoie nil si aucune zone ne couvre ce CP.
+    func detectZoneLivraison(codePostal: String?) -> ZoneLivraison? {
+        guard let cp = codePostal?.trimmingCharacters(in: .whitespaces), !cp.isEmpty else {
+            return nil
+        }
+        return zonesLivraison.first { z in
+            z.actif && z.tarif > 0 && z.codes_postaux.contains(cp)
+        }
+    }
+
     func loadPaiements() async {
         do {
             paiements = try await repo.selectAll(Paiement.self, from: "paiement",
