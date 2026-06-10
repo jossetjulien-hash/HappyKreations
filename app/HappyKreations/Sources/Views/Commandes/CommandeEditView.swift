@@ -477,6 +477,34 @@ struct CommandeEditView: View {
                       systemImage: "link.circle")
             }
             .disabled(isNew || generationLien || resteDu <= 0)
+
+            if !isNew && draft.statut == .a_confirmer && encaisse <= 0 {
+                Button {
+                    Task { await relancerAcompte() }
+                } label: {
+                    Label(draft.relance_acompte_envoye_at == nil
+                          ? "Envoyer une relance d'acompte"
+                          : "Renvoyer une relance d'acompte",
+                          systemImage: "paperplane")
+                }
+            }
+        }
+    }
+
+    private func relancerAcompte() async {
+        do {
+            let res = try await store.repo.relancerAcompte(commande: commandeId)
+            if let err = res.error {
+                errorText = "Relance : \(err)"
+            } else {
+                // Recharge la commande pour rafraîchir relance_acompte_envoye_at
+                if let updated = try? await store.repo.commande(id: commandeId) {
+                    draft = updated
+                }
+                evenements = (try? await store.repo.evenements(forCommande: commandeId)) ?? evenements
+            }
+        } catch {
+            errorText = "Relance : \(error.localizedDescription)"
         }
     }
 

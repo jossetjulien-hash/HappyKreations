@@ -13,6 +13,8 @@ struct ReglagesView: View {
 
     @State private var acomptePourcent: String = "30"
     @State private var delaiMini: String = "7"
+    @State private var relanceActif: Bool = true
+    @State private var relanceDelai: Int = 48
     @State private var nomAtelier: String = "HappyKreations"
     @State private var adresseAtelier: String = ""
     @State private var siretAtelier: String = ""
@@ -255,6 +257,18 @@ struct ReglagesView: View {
                 }
             }
 
+            Section {
+                Toggle("Relancer automatiquement", isOn: $relanceActif)
+                Stepper("Délai avant relance : \(relanceDelai) h",
+                        value: $relanceDelai, in: 12...168, step: 6)
+                    .disabled(!relanceActif)
+                Button("Enregistrer la relance") { Task { await sauverConfig() } }
+            } header: {
+                Text("Relance acompte")
+            } footer: {
+                Text("Quand une commande reste en « À confirmer » plus de \(relanceDelai) h sans acompte payé, un email de relance avec un nouveau lien Stripe est envoyé automatiquement au client (une seule fois par commande).")
+            }
+
             Section("Projet Supabase") {
                 LabeledContent("URL", value: AppConfig.supabaseURL.absoluteString)
             }
@@ -288,6 +302,8 @@ struct ReglagesView: View {
         siretAtelier = store.config["siret_atelier"] ?? ""
         emailAtelier = store.config["email_atelier"] ?? ""
         telephoneAtelier = store.config["telephone_atelier"] ?? ""
+        relanceActif = (store.config["relance_acompte_actif"] ?? "true") == "true"
+        relanceDelai = Int(store.config["relance_acompte_delai_heures"] ?? "48") ?? 48
     }
 
     private func chargerCalendriers() async {
@@ -326,6 +342,8 @@ struct ReglagesView: View {
             try await store.repo.setConfig(cle: "siret_atelier", valeur: siretAtelier)
             try await store.repo.setConfig(cle: "email_atelier", valeur: emailAtelier)
             try await store.repo.setConfig(cle: "telephone_atelier", valeur: telephoneAtelier)
+            try await store.repo.setConfig(cle: "relance_acompte_actif", valeur: relanceActif ? "true" : "false")
+            try await store.repo.setConfig(cle: "relance_acompte_delai_heures", valeur: "\(relanceDelai)")
             await store.loadConfig()
         } catch { errorText = error.localizedDescription }
     }

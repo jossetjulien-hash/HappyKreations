@@ -288,8 +288,10 @@ struct Commande: Codable, Identifiable, Hashable {
     var photo_resultat_url: String?
     var numero_facture: String?
     var rappel_envoye_at: Date?
+    var relance_acompte_envoye_at: Date?
     var email_confirmation_ouvert_at: Date?
     var email_rappel_ouvert_at: Date?
+    var email_relance_ouvert_at: Date?
     var mode_remise: ModeRemise
     var zone_livraison_id: UUID?
     var frais_livraison: Double
@@ -329,7 +331,8 @@ struct Commande: Codable, Identifiable, Hashable {
         case id, client_id, canal, type_evenement, date_evenement, date_retrait,
              statut, total, acompte, notes, allergies, message_gravure, couleur,
              photo_ref_url, photo_resultat_url, numero_facture, rappel_envoye_at,
-             email_confirmation_ouvert_at, email_rappel_ouvert_at,
+             relance_acompte_envoye_at,
+             email_confirmation_ouvert_at, email_rappel_ouvert_at, email_relance_ouvert_at,
              mode_remise, zone_livraison_id, frais_livraison,
              adresse_livraison, latitude, longitude,
              created_by, created_at, updated_at
@@ -354,8 +357,10 @@ struct Commande: Codable, Identifiable, Hashable {
         photo_resultat_url = try c.decodeIfPresent(String.self, forKey: .photo_resultat_url)
         numero_facture = try c.decodeIfPresent(String.self, forKey: .numero_facture)
         rappel_envoye_at = try c.decodeIfPresent(Date.self, forKey: .rappel_envoye_at)
+        relance_acompte_envoye_at = try c.decodeIfPresent(Date.self, forKey: .relance_acompte_envoye_at)
         email_confirmation_ouvert_at = try c.decodeIfPresent(Date.self, forKey: .email_confirmation_ouvert_at)
         email_rappel_ouvert_at = try c.decodeIfPresent(Date.self, forKey: .email_rappel_ouvert_at)
+        email_relance_ouvert_at = try c.decodeIfPresent(Date.self, forKey: .email_relance_ouvert_at)
         mode_remise = try c.decodeIfPresent(ModeRemise.self, forKey: .mode_remise) ?? .retrait
         zone_livraison_id = try c.decodeIfPresent(UUID.self, forKey: .zone_livraison_id)
         frais_livraison = c.decodeDoubleIfPresent(.frais_livraison) ?? 0

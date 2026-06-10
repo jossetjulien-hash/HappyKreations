@@ -62,6 +62,11 @@ struct Repository {
             .execute().value
     }
 
+    func commande(id: UUID) async throws -> Commande {
+        try await client.from("commande").select()
+            .eq("id", value: id).single().execute().value
+    }
+
     func lignes(forCommande id: UUID) async throws -> [CommandeLigne] {
         try await client.from("commande_ligne").select()
             .eq("commande_id", value: id)
@@ -181,6 +186,22 @@ struct Repository {
         )
         let res: LienPaiement = try await client.functions.invoke(
             "creer-lien-paiement",
+            options: FunctionInvokeOptions(body: body)
+        )
+        return res
+    }
+
+    struct RelanceResult: Decodable {
+        let ok: Bool?
+        let relancees: Int?
+        let error: String?
+    }
+    /// Déclenche une relance d'acompte manuelle pour une commande donnée.
+    func relancerAcompte(commande id: UUID) async throws -> RelanceResult {
+        struct Body: Encodable { let commande_id: String }
+        let body = Body(commande_id: id.uuidString.lowercased())
+        let res: RelanceResult = try await client.functions.invoke(
+            "relance-acompte",
             options: FunctionInvokeOptions(body: body)
         )
         return res
