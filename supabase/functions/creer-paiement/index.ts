@@ -41,7 +41,8 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       client, date_retrait, date_evenement, type_evenement, lignes, notes,
-      allergies, message_gravure, couleur, photo_ref_url, code_promo_id, origin,
+      allergies, message_gravure, couleur, photo_ref_url, code_promo_id,
+      mode_remise, zone_livraison_id, origin,
     } = body;
     if (!client?.nom || !date_retrait || !Array.isArray(lignes) || lignes.length === 0) {
       return json({ error: "payload_incomplet" }, { status: 400 });
@@ -60,6 +61,7 @@ Deno.serve(async (req) => {
       && photo_ref_url.includes("/storage/v1/object/public/commandes-refs/")
       ? photo_ref_url.slice(0, 500)
       : null;
+    const modeRemiseClean = mode_remise === "livraison" ? "livraison" : "retrait";
 
     // 1. Valider la disponibilité de la date
     const [{ data: capJour }, { data: configRows }] = await Promise.all([
@@ -154,7 +156,22 @@ Deno.serve(async (req) => {
       // code expiré ou inexistant entre la validation client et le submit).
     }
 
-    const total = Math.max(0, totalBrut - remise);
+    // Frais de livraison : re-validation depuis la BDD (jamais faire
+    // confiance au tarif envoyé par le client).
+    let fraisLivraison = 0;
+    let zoneLivraisonIdValide: string | null = null;
+    if (modeRemiseClean === "livraison" && typeof zone_livraison_id === "string" && zone_livraison_id.length > 0) {
+      const { data: zone } = await db.from("zone_livraison")
+        .select("id, tarif, actif")
+        .eq("id", zone_livraison_id).maybeSingle();
+      if (!zone || !zone.actif) {
+        return json({ error: "zone_invalide" }, { status: 400 });
+      }
+      fraisLivraison = Math.round(Number(zone.tarif) * 100) / 100;
+      zoneLivraisonIdValide = zone.id;
+    }
+
+    const total = Math.max(0, totalBrut - remise) + fraisLivraison;
     const acompte = Math.round(total * acomptePourcent) / 100;
 
     // 5. Créer la commande
@@ -174,6 +191,9 @@ Deno.serve(async (req) => {
       photo_ref_url: photoRefClean,
       code_promo_id: codePromoIdValide,
       remise: remise > 0 ? remise : null,
+      mode_remise: modeRemiseClean,
+      zone_livraison_id: zoneLivraisonIdValide,
+      frais_livraison: fraisLivraison,
     }).select("id").single();
     if (cmdErr) throw cmdErr;
 

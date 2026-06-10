@@ -217,6 +217,12 @@ struct ReglagesView: View {
                 } label: { Label("Toutes les commandes (CSV)", systemImage: "square.and.arrow.up") }
             }
 
+            Section("Livraison") {
+                NavigationLink(destination: ZonesLivraisonView()) {
+                    Label("Zones et tarifs de livraison", systemImage: "shippingbox")
+                }
+            }
+
             Section("Projet Supabase") {
                 LabeledContent("URL", value: AppConfig.supabaseURL.absoluteString)
             }

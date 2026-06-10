@@ -20,6 +20,7 @@ final class AppStore: ObservableObject {
     @Published var codesPromo: [CodePromo] = []
     @Published var avis: [Avis] = []
     @Published var temoignages: [Temoignage] = []
+    @Published var zonesLivraison: [ZoneLivraison] = []
     @Published var config: [String: String] = [:]
 
     @Published var lastError: String?
@@ -64,7 +65,8 @@ final class AppStore: ObservableObject {
         async let e: () = loadEntrantes()
         async let cp: () = loadCodesPromo()
         async let av: () = loadAvis()
-        _ = await (c, p, m, co, pa, f, b, k, cf, t, e, cp, av)
+        async let zl: () = loadZonesLivraison()
+        _ = await (c, p, m, co, pa, f, b, k, cf, t, e, cp, av, zl)
         // Indexation Spotlight des données fraîchement chargées.
         await SpotlightIndexer.reindex(store: self)
         // Pousse les retraits du jour vers le widget.
@@ -100,6 +102,20 @@ final class AppStore: ObservableObject {
                 Avis.self, from: "avis",
                 orderBy: "cree_le", ascending: false)
         } catch { lastError = "avis: \(error.localizedDescription)" }
+    }
+
+    func loadZonesLivraison() async {
+        do {
+            zonesLivraison = try await repo.selectAll(
+                ZoneLivraison.self, from: "zone_livraison",
+                orderBy: "ordre")
+        } catch { lastError = "zone_livraison: \(error.localizedDescription)" }
+    }
+
+    /// Retourne la zone associée à une commande (ou nil si retrait sur place / zone supprimée).
+    func zoneLivraison(id: UUID?) -> ZoneLivraison? {
+        guard let id else { return nil }
+        return zonesLivraison.first { $0.id == id }
     }
 
     func loadPaiements() async {

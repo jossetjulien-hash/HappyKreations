@@ -50,6 +50,7 @@ struct CommandeEditView: View {
             sectionPhotoResultat
             sectionPersonnalisation
             sectionLignes
+            sectionLivraison
             sectionTotaux
             sectionPaiements
             sectionStatut
@@ -240,8 +241,55 @@ struct CommandeEditView: View {
         }
     }
 
+    private var sectionLivraison: some View {
+        Section("Remise du produit") {
+            Picker("Mode", selection: $draft.mode_remise) {
+                ForEach(ModeRemise.allCases) { m in
+                    Text(m.libelle).tag(m)
+                }
+            }
+            .pickerStyle(.segmented)
+            .onChange(of: draft.mode_remise) { _, new in
+                if new == .retrait {
+                    draft.zone_livraison_id = nil
+                    draft.frais_livraison = 0
+                }
+            }
+            if draft.mode_remise == .livraison {
+                let zonesActives = store.zonesLivraison.filter { $0.actif && $0.tarif > 0 }
+                Picker("Zone", selection: $draft.zone_livraison_id) {
+                    Text("— Choisir —").tag(UUID?.none)
+                    ForEach(zonesActives) { z in
+                        HStack {
+                            Text(z.nom)
+                            Spacer()
+                            Text(z.tarif, format: .currency(code: "EUR"))
+                                .foregroundStyle(.secondary)
+                        }
+                        .tag(Optional(z.id))
+                    }
+                }
+                .onChange(of: draft.zone_livraison_id) { _, new in
+                    draft.frais_livraison = store.zoneLivraison(id: new)?.tarif ?? 0
+                }
+                if zonesActives.isEmpty {
+                    Text("Aucune zone configurée. Ajoute-en une dans Réglages → Zones de livraison.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
     private var sectionTotaux: some View {
         Section("Totaux") {
+            HStack { Text("Sous-total produits"); Spacer()
+                Text(totalProduits, format: .currency(code: "EUR")).foregroundStyle(.secondary)
+            }
+            if draft.frais_livraison > 0 {
+                HStack { Text("Frais de livraison"); Spacer()
+                    Text(draft.frais_livraison, format: .currency(code: "EUR")).foregroundStyle(.secondary)
+                }
+            }
             HStack { Text("Total"); Spacer()
                 Text(totalCalcule, format: .currency(code: "EUR")).bold()
             }
@@ -365,8 +413,11 @@ struct CommandeEditView: View {
 
     // MARK: - Calculs
 
-    private var totalCalcule: Double {
+    private var totalProduits: Double {
         lignes.reduce(0) { $0 + Double($1.quantite) * $1.prix_unitaire }
+    }
+    private var totalCalcule: Double {
+        totalProduits + draft.frais_livraison
     }
     private var acompte: Double {
         totalCalcule * store.acomptePourcent / 100

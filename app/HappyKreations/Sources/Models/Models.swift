@@ -263,6 +263,9 @@ struct Commande: Codable, Identifiable, Hashable {
     var rappel_envoye_at: Date?
     var email_confirmation_ouvert_at: Date?
     var email_rappel_ouvert_at: Date?
+    var mode_remise: ModeRemise
+    var zone_livraison_id: UUID?
+    var frais_livraison: Double
     var created_by: UUID?
     var created_at: Date?
     var updated_at: Date?
@@ -278,6 +281,8 @@ struct Commande: Codable, Identifiable, Hashable {
          total: Double, acompte: Double, notes: String?,
          allergies: [String] = [], message_gravure: String? = nil, couleur: String? = nil,
          photo_ref_url: String? = nil,
+         mode_remise: ModeRemise = .retrait, zone_livraison_id: UUID? = nil,
+         frais_livraison: Double = 0,
          created_by: UUID? = nil, created_at: Date? = nil, updated_at: Date? = nil) {
         self.id = id; self.client_id = client_id; self.canal = canal
         self.type_evenement = type_evenement; self.date_evenement = date_evenement
@@ -285,6 +290,8 @@ struct Commande: Codable, Identifiable, Hashable {
         self.total = total; self.acompte = acompte; self.notes = notes
         self.allergies = allergies; self.message_gravure = message_gravure; self.couleur = couleur
         self.photo_ref_url = photo_ref_url
+        self.mode_remise = mode_remise; self.zone_livraison_id = zone_livraison_id
+        self.frais_livraison = frais_livraison
         self.created_by = created_by; self.created_at = created_at; self.updated_at = updated_at
     }
 
@@ -293,6 +300,7 @@ struct Commande: Codable, Identifiable, Hashable {
              statut, total, acompte, notes, allergies, message_gravure, couleur,
              photo_ref_url, photo_resultat_url, numero_facture, rappel_envoye_at,
              email_confirmation_ouvert_at, email_rappel_ouvert_at,
+             mode_remise, zone_livraison_id, frais_livraison,
              created_by, created_at, updated_at
     }
 
@@ -317,6 +325,9 @@ struct Commande: Codable, Identifiable, Hashable {
         rappel_envoye_at = try c.decodeIfPresent(Date.self, forKey: .rappel_envoye_at)
         email_confirmation_ouvert_at = try c.decodeIfPresent(Date.self, forKey: .email_confirmation_ouvert_at)
         email_rappel_ouvert_at = try c.decodeIfPresent(Date.self, forKey: .email_rappel_ouvert_at)
+        mode_remise = try c.decodeIfPresent(ModeRemise.self, forKey: .mode_remise) ?? .retrait
+        zone_livraison_id = try c.decodeIfPresent(UUID.self, forKey: .zone_livraison_id)
+        frais_livraison = c.decodeDoubleIfPresent(.frais_livraison) ?? 0
         created_by = try c.decodeIfPresent(UUID.self, forKey: .created_by)
         created_at = try c.decodeIfPresent(Date.self, forKey: .created_at)
         updated_at = try c.decodeIfPresent(Date.self, forKey: .updated_at)
@@ -548,6 +559,56 @@ struct Avis: Codable, Identifiable, Hashable {
 }
 
 // MARK: - Code promo
+
+enum ModeRemise: String, Codable, CaseIterable, Identifiable {
+    case retrait
+    case livraison
+    var id: String { rawValue }
+    var libelle: String {
+        switch self {
+        case .retrait:   return "Retrait sur place"
+        case .livraison: return "Livraison"
+        }
+    }
+}
+
+struct ZoneLivraison: Codable, Identifiable, Hashable {
+    var id: UUID
+    var nom: String
+    var tarif: Double
+    var description: String?
+    var ordre: Int
+    var actif: Bool
+    var created_at: Date?
+
+    static func new() -> ZoneLivraison {
+        ZoneLivraison(id: UUID(), nom: "", tarif: 0, description: nil,
+                      ordre: 0, actif: true)
+    }
+
+    init(id: UUID, nom: String, tarif: Double, description: String?,
+         ordre: Int, actif: Bool, created_at: Date? = nil) {
+        self.id = id; self.nom = nom; self.tarif = tarif
+        self.description = description
+        self.ordre = ordre; self.actif = actif
+        self.created_at = created_at
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, nom, tarif, description, ordre, actif, created_at
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        nom = try c.decode(String.self, forKey: .nom)
+        tarif = try c.decodeDouble(.tarif)
+        description = try c.decodeIfPresent(String.self, forKey: .description)
+        ordre = try c.decodeIfPresent(Int.self, forKey: .ordre) ?? 0
+        actif = try c.decode(Bool.self, forKey: .actif)
+        created_at = try c.decodeIfPresent(Date.self, forKey: .created_at)
+    }
+}
 
 struct CodePromo: Codable, Identifiable, Hashable {
     var id: UUID

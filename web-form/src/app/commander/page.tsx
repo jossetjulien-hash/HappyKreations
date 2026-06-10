@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Produit, CapaciteJour, ConfigItem, LigneCommande, ClientInfo } from "@/lib/types";
+import type { Produit, CapaciteJour, ConfigItem, LigneCommande, ClientInfo, ZoneLivraison } from "@/lib/types";
 
 const SUPABASE_FN_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/creer-paiement`;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -13,6 +13,9 @@ export default function Page() {
   const [produits, setProduits] = useState<Produit[]>([]);
   const [capacites, setCapacites] = useState<CapaciteJour[]>([]);
   const [config, setConfig] = useState<Record<string, string>>({});
+  const [zones, setZones] = useState<ZoneLivraison[]>([]);
+  const [modeRemise, setModeRemise] = useState<"retrait" | "livraison">("retrait");
+  const [zoneId, setZoneId] = useState<string | null>(null);
   const [quantites, setQuantites] = useState<Record<string, { qte: number; decli?: string }>>({});
   const [dateRetrait, setDateRetrait] = useState<string | null>(null);
   const [typeEvenement, setTypeEvenement] = useState("");
@@ -81,14 +84,16 @@ export default function Page() {
 
   useEffect(() => {
     (async () => {
-      const [{ data: p }, { data: c }, { data: cf }] = await Promise.all([
+      const [{ data: p }, { data: c }, { data: cf }, { data: z }] = await Promise.all([
         supabase.from("produit").select("*").eq("visible_formulaire", true).eq("actif", true),
         supabase.from("capacite_jour").select("*"),
         supabase.from("config").select("*"),
+        supabase.from("zone_livraison").select("*").eq("actif", true).gt("tarif", 0).order("ordre"),
       ]);
       setProduits(p ?? []);
       setCapacites(c ?? []);
       setConfig(Object.fromEntries((cf as ConfigItem[] ?? []).map((x) => [x.cle, x.valeur])));
+      setZones((z ?? []) as ZoneLivraison[]);
     })();
   }, []);
 
@@ -130,7 +135,10 @@ export default function Page() {
         ? Math.min(codeApplique.valeur, totalBrut)
         : Math.round(totalBrut * codeApplique.valeur) / 100)
     : 0;
-  const total = Math.max(0, totalBrut - remise);
+  const fraisLivraison = modeRemise === "livraison"
+    ? (zones.find((z) => z.id === zoneId)?.tarif ?? 0)
+    : 0;
+  const total = Math.max(0, totalBrut - remise) + fraisLivraison;
   const acompte = Math.round(total * acomptePourcent) / 100;
 
   function setQte(p: Produit, delta: number) {
@@ -158,6 +166,9 @@ export default function Page() {
     if (!client.email && !client.telephone) return setError("Email ou téléphone requis.");
     if (!dateRetrait) return setError("Choisissez une date de retrait.");
     if (lignes.length === 0) return setError("Sélectionnez au moins un produit.");
+    if (modeRemise === "livraison" && !zoneId) {
+      return setError("Choisissez votre zone de livraison.");
+    }
     // Contrôle min/max par produit
     for (const l of lignes) {
       const p = produits.find((pp) => pp.id === l.produit_id);
@@ -191,6 +202,8 @@ export default function Page() {
           couleur: couleur || null,
           photo_ref_url: photoUrl,
           code_promo_id: codeApplique?.id ?? null,
+          mode_remise: modeRemise,
+          zone_livraison_id: modeRemise === "livraison" ? zoneId : null,
           origin: window.location.origin,
         }),
       });
@@ -360,13 +373,48 @@ export default function Page() {
         <input type="tel" value={client.telephone ?? ""} onChange={(e) => setClient({ ...client, telephone: e.target.value })} />
       </section>
 
+      {zones.length > 0 && (
+        <section className="card">
+          <h2><span className="step">5.</span> Comment recevez-vous votre commande ?</h2>
+          <div className="chips">
+            <button type="button"
+              className={`chip ${modeRemise === "retrait" ? "on" : ""}`}
+              onClick={() => { setModeRemise("retrait"); setZoneId(null); }}>
+              {modeRemise === "retrait" ? "✓ " : ""}Retrait sur place (gratuit)
+            </button>
+            <button type="button"
+              className={`chip ${modeRemise === "livraison" ? "on" : ""}`}
+              onClick={() => setModeRemise("livraison")}>
+              {modeRemise === "livraison" ? "✓ " : ""}Livraison
+            </button>
+          </div>
+          {modeRemise === "livraison" && (
+            <>
+              <label style={{ marginTop: 12 }}>Votre zone</label>
+              <select value={zoneId ?? ""} onChange={(e) => setZoneId(e.target.value || null)}>
+                <option value="">— Choisissez votre zone —</option>
+                {zones.map((z) => (
+                  <option key={z.id} value={z.id}>
+                    {z.nom} — {z.tarif.toFixed(2)} €
+                  </option>
+                ))}
+              </select>
+              {zoneId && (
+                <p className="muted" style={{ marginTop: 8 }}>
+                  Frais de livraison : <strong>{fraisLivraison.toFixed(2)} €</strong>
+                </p>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
       <section className="card summary">
         <h2><span className="step">✿</span> Récapitulatif</h2>
 
-        {codeApplique ? (
-          <p>Sous-total : <strong>{totalBrut.toFixed(2)} €</strong></p>
-        ) : (
-          <p>Total : <strong>{total.toFixed(2)} €</strong></p>
+        <p>Sous-total produits : <strong>{totalBrut.toFixed(2)} €</strong></p>
+        {fraisLivraison > 0 && (
+          <p>Frais de livraison : <strong>{fraisLivraison.toFixed(2)} €</strong></p>
         )}
 
         {/* Code promo */}
@@ -397,9 +445,7 @@ export default function Page() {
         )}
         {codeError && <p className="error" style={{ marginTop: 6 }}>{codeError}</p>}
 
-        {codeApplique && (
-          <p>Total : <strong>{total.toFixed(2)} €</strong></p>
-        )}
+        <p>Total : <strong>{total.toFixed(2)} €</strong></p>
         <p>Acompte à régler maintenant ({acomptePourcent} %) : <strong>{acompte.toFixed(2)} €</strong></p>
         <p className="muted">Le solde sera réglé au retrait.</p>
         <div className="info-paiement">

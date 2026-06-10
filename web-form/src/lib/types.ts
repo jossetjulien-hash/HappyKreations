@@ -11,6 +11,15 @@ export interface Produit {
   qte_max: number | null;
 }
 
+export interface ZoneLivraison {
+  id: string;
+  nom: string;
+  tarif: number;
+  description: string | null;
+  ordre: number;
+  actif: boolean;
+}
+
 export interface CapaciteJour {
   date: string;
   plafond_unites: number | null;
