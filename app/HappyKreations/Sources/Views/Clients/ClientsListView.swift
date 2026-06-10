@@ -76,6 +76,7 @@ struct ClientEditView: View {
     var onCreated: ((Client) -> Void)? = nil
     @State private var errorText: String?
     @State private var partageFormulaire = false
+    @State private var choixCanal = false
 
     init(clientId: UUID, draft: Client? = nil, isNew: Bool = false,
          onCreated: ((Client) -> Void)? = nil) {
@@ -107,16 +108,14 @@ struct ClientEditView: View {
             if !isNew {
                 Section {
                     Button {
-                        partagerFormulaire()
+                        choixCanal = true
                     } label: {
                         Label("Envoyer le formulaire de commande", systemImage: "square.and.arrow.up")
                     }
                 } header: {
                     Text("Formulaire de commande")
                 } footer: {
-                    Text(draft.email?.isEmpty == false
-                         ? "Ouvre un e-mail pré-rempli vers \(draft.email ?? "") avec le lien du formulaire."
-                         : "Ouvre la feuille de partage (SMS, WhatsApp…) avec le lien du formulaire.")
+                    Text("Choisis le canal (e-mail, SMS, WhatsApp…). Les coordonnées du client sont pré-remplies automatiquement.")
                 }
 
                 let cmds = store.commandes.filter { $0.client_id == clientId }
@@ -142,38 +141,61 @@ struct ClientEditView: View {
                 }
             }
         }
+        .confirmationDialog("Envoyer le formulaire",
+                            isPresented: $choixCanal, titleVisibility: .visible) {
+            if let email = draft.email?.trimmingCharacters(in: .whitespaces), !email.isEmpty {
+                Button("E-mail (\(email))") { ouvrirMail(email: email) }
+            }
+            if let tel = telephoneNettoye {
+                Button("SMS (\(draft.telephone ?? ""))") { ouvrirSMS(tel: tel) }
+                Button("WhatsApp") { ouvrirWhatsApp(tel: tel) }
+            }
+            Button("Autre application…") { partageFormulaire = true }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Choisis comment envoyer le lien à \(draft.nom).")
+        }
         .sheet(isPresented: $partageFormulaire) {
-            ShareSheet(items: [
-                "Bonjour \(draft.nom.split(separator: " ").first.map(String.init) ?? ""), passez votre commande HappyKreations ici 🍫 :",
-                AppConfig.formulaireURL,
-            ])
-            .presentationDetents([.medium])
+            ShareSheet(items: [messageFormulaire, AppConfig.formulaireURL])
+                .presentationDetents([.medium])
         }
         .alert("Erreur", isPresented: .init(get: { errorText != nil }, set: { _ in errorText = nil })) {
             Button("OK", role: .cancel) {}
         } message: { Text(errorText ?? "") }
     }
 
-    /// Si le client a un e-mail → ouvre Mail pré-rempli. Sinon → share sheet.
-    private func partagerFormulaire() {
-        let url = AppConfig.formulaireURL
-        if let email = draft.email?.trimmingCharacters(in: .whitespaces),
-           !email.isEmpty,
-           ouvrirMailFormulaire(url: url, email: email) {
-            return
+    // MARK: - Partage formulaire (multi-canal)
+
+    private var prenom: String {
+        draft.nom.split(separator: " ").first.map(String.init) ?? ""
+    }
+    private var salutation: String {
+        prenom.isEmpty ? "Bonjour," : "Bonjour \(prenom),"
+    }
+    /// Message texte (SMS / WhatsApp / share sheet).
+    private var messageFormulaire: String {
+        "\(salutation) passez votre commande HappyKreations ici 🍫 : \(AppConfig.formulaireURL.absoluteString)"
+    }
+    /// Téléphone normalisé au format international sans symboles (ex.
+    /// 0692401797 → 262692401797). nil si pas de téléphone.
+    private var telephoneNettoye: String? {
+        guard let raw = draft.telephone?.trimmingCharacters(in: .whitespaces), !raw.isEmpty else {
+            return nil
         }
-        partageFormulaire = true
+        var digits = raw.filter { $0.isNumber || $0 == "+" }
+        if digits.hasPrefix("+") { digits.removeFirst() }
+        // Numéro local Réunion (07.. / 06.. / 026...) → préfixe pays 262.
+        if digits.hasPrefix("0") { digits = "262" + digits.dropFirst() }
+        return digits.isEmpty ? nil : digits
     }
 
-    private func ouvrirMailFormulaire(url: URL, email: String) -> Bool {
-        let prenom = draft.nom.split(separator: " ").first.map(String.init) ?? ""
-        let salutation = prenom.isEmpty ? "Bonjour," : "Bonjour \(prenom),"
+    private func ouvrirMail(email: String) {
         let subject = "Votre commande HappyKreations 🍫"
         let body = """
         \(salutation)
 
         Pour passer votre commande et régler l'acompte en ligne, c'est par ici :
-        \(url.absoluteString)
+        \(AppConfig.formulaireURL.absoluteString)
 
         À très vite,
         HappyKreations
@@ -185,13 +207,27 @@ struct ClientEditView: View {
             URLQueryItem(name: "subject", value: subject),
             URLQueryItem(name: "body", value: body),
         ]
-        guard let mailto = comps.url else { return false }
+        if let url = comps.url { ouvrir(url) }
+    }
+
+    private func ouvrirSMS(tel: String) {
+        let texte = messageFormulaire.addingPercentEncoding(
+            withAllowedCharacters: .urlQueryAllowed) ?? ""
+        // Format iOS : sms:<numero>&body=<texte>
+        if let url = URL(string: "sms:\(tel)&body=\(texte)") { ouvrir(url) }
+    }
+
+    private func ouvrirWhatsApp(tel: String) {
+        let texte = messageFormulaire.addingPercentEncoding(
+            withAllowedCharacters: .urlQueryAllowed) ?? ""
+        if let url = URL(string: "https://wa.me/\(tel)?text=\(texte)") { ouvrir(url) }
+    }
+
+    private func ouvrir(_ url: URL) {
         #if os(iOS)
-        guard UIApplication.shared.canOpenURL(mailto) else { return false }
-        UIApplication.shared.open(mailto)
-        return true
+        UIApplication.shared.open(url)
         #else
-        return NSWorkspace.shared.open(mailto)
+        NSWorkspace.shared.open(url)
         #endif
     }
 
