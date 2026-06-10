@@ -634,6 +634,52 @@ struct PlageBlocage: Codable, Identifiable, Hashable {
     }
 }
 
+enum TypeEvenementCommande: String, Codable {
+    case auto, memo
+}
+
+struct CommandeEvenement: Codable, Identifiable, Hashable {
+    var id: UUID
+    var commande_id: UUID
+    var type: TypeEvenementCommande
+    var titre: String
+    var description: String?
+    var icone: String?
+    var auteur: UUID?
+    var created_at: Date?
+
+    static func newMemo(commande_id: UUID, titre: String, auteur: UUID?) -> CommandeEvenement {
+        CommandeEvenement(id: UUID(), commande_id: commande_id,
+                          type: .memo, titre: titre,
+                          description: nil, icone: "note.text",
+                          auteur: auteur, created_at: Date())
+    }
+
+    init(id: UUID, commande_id: UUID, type: TypeEvenementCommande,
+         titre: String, description: String?, icone: String?,
+         auteur: UUID?, created_at: Date?) {
+        self.id = id; self.commande_id = commande_id; self.type = type
+        self.titre = titre; self.description = description; self.icone = icone
+        self.auteur = auteur; self.created_at = created_at
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, commande_id, type, titre, description, icone, auteur, created_at
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        commande_id = try c.decode(UUID.self, forKey: .commande_id)
+        type = try c.decodeIfPresent(TypeEvenementCommande.self, forKey: .type) ?? .auto
+        titre = try c.decode(String.self, forKey: .titre)
+        description = try c.decodeIfPresent(String.self, forKey: .description)
+        icone = try c.decodeIfPresent(String.self, forKey: .icone)
+        auteur = try c.decodeIfPresent(UUID.self, forKey: .auteur)
+        created_at = try c.decodeIfPresent(Date.self, forKey: .created_at)
+    }
+}
+
 enum ModeRemise: String, Codable, CaseIterable, Identifiable {
     case retrait
     case livraison

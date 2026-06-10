@@ -98,6 +98,7 @@ struct ClientEditView: View {
     @State private var choixCanal = false
     @State private var confirmerSuppression = false
     @State private var infoSuppressionImpossible = false
+    @State private var paiementsClient: [Paiement] = []
 
     init(clientId: UUID, draft: Client? = nil, isNew: Bool = false,
          onCreated: ((Client) -> Void)? = nil) {
@@ -150,6 +151,48 @@ struct ClientEditView: View {
                 }
 
                 Section {
+                    HStack {
+                        Text("CA cumulé").foregroundStyle(.secondary)
+                        Spacer()
+                        Text(caCumule, format: .currency(code: "EUR")).bold()
+                    }
+                    HStack {
+                        Text("Encaissé").foregroundStyle(.secondary)
+                        Spacer()
+                        Text(encaisseCumule, format: .currency(code: "EUR"))
+                            .foregroundStyle(Color.green)
+                    }
+                    HStack {
+                        Text("Reste dû").foregroundStyle(.secondary)
+                        Spacer()
+                        Text(resteDuCumule, format: .currency(code: "EUR"))
+                            .foregroundStyle(resteDuCumule > 0 ? Color.red : Color.secondary)
+                    }
+                    if paiementsClient.isEmpty {
+                        Text("Aucun paiement.").foregroundStyle(.secondary).font(.subheadline)
+                    } else {
+                        ForEach(paiementsClient) { p in
+                            HStack(spacing: 8) {
+                                Image(systemName: iconePaiement(p))
+                                    .foregroundStyle(p.statut == .reussi ? Color.green : .secondary)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(p.moyen.libelle).font(.subheadline)
+                                    Text(p.date.formatted(date: .abbreviated, time: .omitted))
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Text(p.montant, format: .currency(code: "EUR"))
+                                    .font(.subheadline).bold()
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Tous les paiements")
+                } footer: {
+                    Text("Toutes commandes confondues. Mise à jour automatique quand un paiement Stripe arrive.")
+                }
+
+                Section {
                     Button {
                         Task { await basculerArchive() }
                     } label: {
@@ -176,6 +219,10 @@ struct ClientEditView: View {
         }
         .formStyle(.grouped)
         .navigationTitle(isNew ? "Nouveau client" : draft.nom)
+        .task {
+            guard !isNew else { return }
+            paiementsClient = (try? await store.repo.paiementsParClient(clientId)) ?? []
+        }
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button(isNew ? "Créer" : "Enregistrer") { Task { await save() } }
@@ -244,6 +291,29 @@ struct ClientEditView: View {
             await store.loadClients()
             dismiss()
         } catch { errorText = error.localizedDescription }
+    }
+
+    // MARK: - Totaux paiements
+
+    private var commandesClient: [Commande] {
+        store.commandes.filter { $0.client_id == clientId && $0.statut != .annulee }
+    }
+    private var caCumule: Double {
+        commandesClient.reduce(0) { $0 + $1.total }
+    }
+    private var encaisseCumule: Double {
+        paiementsClient.filter { $0.statut == .reussi }.reduce(0) { $0 + $1.montant }
+    }
+    private var resteDuCumule: Double {
+        max(0, caCumule - encaisseCumule)
+    }
+    private func iconePaiement(_ p: Paiement) -> String {
+        switch p.moyen {
+        case .stripe: return "creditcard.fill"
+        case .especes: return "banknote.fill"
+        case .virement: return "arrow.left.arrow.right"
+        case .autre: return "questionmark.circle"
+        }
     }
 
     // MARK: - Partage formulaire (multi-canal)

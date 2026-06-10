@@ -21,6 +21,8 @@ struct CommandeEditView: View {
 
     @State private var lignes: [CommandeLigne] = []
     @State private var paiements: [Paiement] = []
+    @State private var evenements: [CommandeEvenement] = []
+    @State private var nouveauMemo: String = ""
     @State private var isLoading = false
     @State private var errorText: String?
     @State private var photoRefItem: PhotosPickerItem?
@@ -62,6 +64,7 @@ struct CommandeEditView: View {
             sectionPaiements
             sectionStatut
             sectionDocuments
+            if !isNew { sectionHistorique }
         }
         .formStyle(.grouped)
         .navigationTitle(isNew ? "Nouvelle commande" : "Commande")
@@ -571,6 +574,53 @@ struct CommandeEditView: View {
         do {
             lignes = try await store.repo.lignes(forCommande: commandeId)
             paiements = try await store.repo.paiements(forCommande: commandeId)
+            evenements = try await store.repo.evenements(forCommande: commandeId)
+        } catch { errorText = error.localizedDescription }
+    }
+
+    private var sectionHistorique: some View {
+        Section {
+            ForEach(evenements) { e in
+                EvenementRow(evenement: e, onDelete: e.type == .memo ? { Task { await supprimerMemo(e) } } : nil)
+            }
+            HStack {
+                TextField("Ajouter un mémo (ex. « Mail envoyé pour acompte »)",
+                          text: $nouveauMemo, axis: .vertical)
+                    .lineLimit(1...3)
+                Button {
+                    Task { await ajouterMemo() }
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundStyle(Color.hkRoseDeep)
+                        .font(.title3)
+                }
+                .buttonStyle(.plain)
+                .disabled(nouveauMemo.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        } header: {
+            Text("Historique")
+        } footer: {
+            Text("Mémos partagés (visibles par tous les utilisateurs). Les événements automatiques (paiement, email, statut…) s'ajoutent tout seuls.")
+        }
+    }
+
+    private func ajouterMemo() async {
+        let texte = nouveauMemo.trimmingCharacters(in: .whitespaces)
+        guard !texte.isEmpty else { return }
+        let memo = CommandeEvenement.newMemo(commande_id: commandeId,
+                                             titre: texte,
+                                             auteur: nil)
+        nouveauMemo = ""
+        do {
+            _ = try await store.repo.insert("commande_evenement", memo)
+            evenements = try await store.repo.evenements(forCommande: commandeId)
+        } catch { errorText = error.localizedDescription }
+    }
+
+    private func supprimerMemo(_ e: CommandeEvenement) async {
+        do {
+            try await store.repo.delete("commande_evenement", id: e.id)
+            evenements = try await store.repo.evenements(forCommande: commandeId)
         } catch { errorText = error.localizedDescription }
     }
 
@@ -891,6 +941,45 @@ private struct UIShareSheetWrapper: UIViewControllerRepresentable {
 #endif
 
 /// Vignette de la photo de référence (avec placeholder).
+struct EvenementRow: View {
+    let evenement: CommandeEvenement
+    var onDelete: (() -> Void)? = nil
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: evenement.icone ?? defaultIcon)
+                .foregroundStyle(tint)
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(evenement.titre).font(.subheadline)
+                    .foregroundStyle(evenement.type == .memo ? .primary : .secondary)
+                if let d = evenement.description, !d.isEmpty {
+                    Text(d).font(.caption).foregroundStyle(.secondary)
+                }
+                if let date = evenement.created_at {
+                    Text(date.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            if let onDelete {
+                Button(role: .destructive, action: onDelete) {
+                    Image(systemName: "trash").font(.caption)
+                }
+                .buttonStyle(.borderless)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    private var defaultIcon: String {
+        evenement.type == .memo ? "note.text" : "circle.fill"
+    }
+    private var tint: Color {
+        evenement.type == .memo ? Color.hkRoseDeep : .secondary
+    }
+}
+
 private struct PhotoRefThumb: View {
     let url: String?
     var size: CGFloat = 88

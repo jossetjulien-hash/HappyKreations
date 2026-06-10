@@ -68,6 +68,25 @@ struct Repository {
             .execute().value
     }
 
+    func evenements(forCommande id: UUID) async throws -> [CommandeEvenement] {
+        try await client.from("commande_evenement").select()
+            .eq("commande_id", value: id)
+            .order("created_at", ascending: true)
+            .execute().value
+    }
+
+    /// Tous les paiements d'un client (toutes commandes confondues).
+    private struct CommandeId: Decodable { let id: UUID }
+    func paiementsParClient(_ clientId: UUID) async throws -> [Paiement] {
+        let cmds: [CommandeId] = try await client.from("commande").select("id")
+            .eq("client_id", value: clientId).execute().value
+        guard !cmds.isEmpty else { return [] }
+        return try await client.from("paiement").select()
+            .in("commande_id", values: cmds.map(\.id))
+            .order("date", ascending: false)
+            .execute().value
+    }
+
     func recetteLignes(produit id: UUID) async throws -> [RecetteLigne] {
         try await client.from("recette_ligne").select()
             .eq("produit_id", value: id)
