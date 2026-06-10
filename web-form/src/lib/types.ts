@@ -9,6 +9,7 @@ export interface Produit {
   photo_url: string | null;
   qte_min: number | null;
   qte_max: number | null;
+  max_parfums_par_commande: number;
 }
 
 export interface ZoneLivraison {

@@ -132,13 +132,13 @@ struct RecetteEditView: View {
             } footer: {
                 Text("Appliqué sur le formulaire web : le client ne peut pas commander en dessous du minimum ni au-dessus du maximum.")
             }
-            Section("Déclinaisons") {
+            Section {
                 ForEach(draft.declinaisons, id: \.self) { d in Text(d) }
                     .onDelete { idx in
                         draft.declinaisons.remove(atOffsets: idx)
                     }
                 HStack {
-                    TextField("Nouvelle déclinaison", text: $declinaisonNew)
+                    TextField("Nouveau parfum / déclinaison", text: $declinaisonNew)
                     Button("Ajouter") {
                         if !declinaisonNew.isEmpty {
                             draft.declinaisons.append(declinaisonNew)
@@ -146,6 +146,12 @@ struct RecetteEditView: View {
                         }
                     }
                 }
+                Stepper("Parfums max par commande : \(draft.max_parfums_par_commande)",
+                        value: $draft.max_parfums_par_commande, in: 1...10)
+            } header: {
+                Text("Parfums / déclinaisons")
+            } footer: {
+                Text("Liste des parfums proposés. « Parfums max par commande » = nombre de parfums différents qu'un client peut combiner dans une seule commande de ce produit (ex. 2 pour les meringues : moitié vanille + moitié chocolat).")
             }
             Section("Recette (matières par unité produite)") {
                 ForEach($lignes) { $l in

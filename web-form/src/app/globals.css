@@ -958,3 +958,17 @@ footer-note { display: none; }
   text-transform: uppercase;
   margin-bottom: 6px;
 }
+
+.parfum-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dashed color-mix(in srgb, var(--rose-deep) 18%, transparent);
+}
+.parfum-row:last-child { border-bottom: none; }
+.parfum-nom {
+  font-size: 0.95rem;
+  color: var(--ink, #4F4A45);
+}
+.produit-card-multi .produit-infos { width: 100%; }

@@ -23,7 +23,10 @@ export default function Page() {
     id: string; label: string; postcode: string; city: string; lat: number; lon: number;
   }>>([]);
   const [adresseRecherche, setAdresseRecherche] = useState(false);
-  const [quantites, setQuantites] = useState<Record<string, { qte: number; decli?: string }>>({});
+  // Pour chaque produit : map { parfum → quantité }.
+  // - Produits sans déclinaisons → clé unique "" (vide)
+  // - Produits avec déclinaisons → une clé par parfum sélectionné
+  const [quantites, setQuantites] = useState<Record<string, Record<string, number>>>({});
   const [dateRetrait, setDateRetrait] = useState<string | null>(null);
   const [typeEvenement, setTypeEvenement] = useState("");
   const [dateEvenement, setDateEvenement] = useState<string>("");
@@ -182,9 +185,27 @@ export default function Page() {
     return out;
   }, [capacites, delaiMini, plagesBlocage]);
 
-  const lignes: LigneCommande[] = Object.entries(quantites)
-    .filter(([, v]) => v.qte > 0)
-    .map(([produit_id, v]) => ({ produit_id, quantite: v.qte, declinaison: v.decli }));
+  // Une ligne par couple (produit, parfum) avec qte > 0
+  const lignes: LigneCommande[] = Object.entries(quantites).flatMap(([produit_id, parfumMap]) =>
+    Object.entries(parfumMap)
+      .filter(([, qte]) => qte > 0)
+      .map(([decli, qte]) => ({
+        produit_id,
+        quantite: qte,
+        declinaison: decli || undefined,
+      }))
+  );
+
+  // Quantité totale (toutes décli confondues) pour un produit donné
+  function qteTotale(produitId: string): number {
+    const m = quantites[produitId] ?? {};
+    return Object.values(m).reduce((s, n) => s + (n || 0), 0);
+  }
+  // Nombre de parfums actifs (qte > 0) pour un produit
+  function nbParfumsActifs(produitId: string): number {
+    const m = quantites[produitId] ?? {};
+    return Object.values(m).filter((n) => n > 0).length;
+  }
 
   const totalBrut = lignes.reduce((s, l) => {
     const p = produits.find((pp) => pp.id === l.produit_id);
@@ -201,23 +222,33 @@ export default function Page() {
   const total = Math.max(0, totalBrut - remise) + fraisLivraison;
   const acompte = Math.round(total * acomptePourcent) / 100;
 
-  function setQte(p: Produit, delta: number) {
+  /// Modifie la quantité d'un parfum donné pour un produit.
+  /// Pour un produit sans déclinaisons, on utilise decli = "" (clé vide).
+  function setParfumQte(p: Produit, decli: string, delta: number) {
     setQuantites((q) => {
-      const cur = q[p.id] ?? { qte: 0, decli: p.declinaisons[0] };
-      let next = cur.qte + delta;
-      // Premier ajout : on passe directement au minimum imposé (si défini)
-      // pour éviter au client d'avoir à cliquer 50 fois sur « + ».
-      if (cur.qte === 0 && delta > 0 && p.qte_min && p.qte_min > 1) {
+      const cur = q[p.id] ?? {};
+      const prev = cur[decli] ?? 0;
+      let next = prev + delta;
+      // Premier ajout sur ce parfum + min global défini → on saute au min
+      // (uniquement si c'est le seul parfum actif et qte totale = 0)
+      const totalActuel = Object.values(cur).reduce((s, n) => s + (n || 0), 0);
+      if (totalActuel === 0 && delta > 0 && p.qte_min && p.qte_min > 1) {
         next = p.qte_min;
       }
-      // Plafond : on ne dépasse jamais qte_max
-      if (p.qte_max != null) next = Math.min(next, p.qte_max);
+      // Plafond qte_max : on borne la SOMME totale du produit
+      if (p.qte_max != null) {
+        const autresParfums = totalActuel - prev;
+        next = Math.min(next, Math.max(0, p.qte_max - autresParfums));
+      }
       next = Math.max(0, next);
-      return { ...q, [p.id]: { ...cur, qte: next } };
+      const nouvelle = { ...cur, [decli]: next };
+      // Si on remet à 0 et qu'il n'y a aucun autre parfum, on nettoie
+      const totalNouveau = Object.values(nouvelle).reduce((s, n) => s + (n || 0), 0);
+      if (next === 0 && totalNouveau === 0) {
+        return { ...q, [p.id]: {} };
+      }
+      return { ...q, [p.id]: nouvelle };
     });
-  }
-  function setDecli(p: Produit, decli: string) {
-    setQuantites((q) => ({ ...q, [p.id]: { qte: q[p.id]?.qte ?? 0, decli } }));
   }
 
   async function submit() {
@@ -232,15 +263,27 @@ export default function Page() {
     if (modeRemise === "livraison" && !adresseLivraison.trim()) {
       return setError("Renseignez votre adresse de livraison.");
     }
-    // Contrôle min/max par produit
+    // Contrôle min/max et nombre de parfums : agrégés par produit
+    const totauxParProduit = new Map<string, number>();
+    const parfumsParProduit = new Map<string, Set<string>>();
     for (const l of lignes) {
-      const p = produits.find((pp) => pp.id === l.produit_id);
+      totauxParProduit.set(l.produit_id, (totauxParProduit.get(l.produit_id) ?? 0) + l.quantite);
+      if (!parfumsParProduit.has(l.produit_id)) parfumsParProduit.set(l.produit_id, new Set());
+      parfumsParProduit.get(l.produit_id)!.add(l.declinaison ?? "");
+    }
+    for (const [pid, total] of totauxParProduit) {
+      const p = produits.find((pp) => pp.id === pid);
       if (!p) continue;
-      if (p.qte_min != null && l.quantite < p.qte_min) {
-        return setError(`${p.nom} : minimum ${p.qte_min} ${p.categorie === "cornet" ? "cornets" : "pièces"}.`);
+      const unite = p.categorie === "cornet" ? "cornets" : "pièces";
+      if (p.qte_min != null && total < p.qte_min) {
+        return setError(`${p.nom} : minimum ${p.qte_min} ${unite}.`);
       }
-      if (p.qte_max != null && l.quantite > p.qte_max) {
-        return setError(`${p.nom} : maximum ${p.qte_max} ${p.categorie === "cornet" ? "cornets" : "pièces"}.`);
+      if (p.qte_max != null && total > p.qte_max) {
+        return setError(`${p.nom} : maximum ${p.qte_max} ${unite}.`);
+      }
+      const nbParfums = parfumsParProduit.get(pid)?.size ?? 0;
+      if (p.max_parfums_par_commande >= 1 && nbParfums > p.max_parfums_par_commande) {
+        return setError(`${p.nom} : maximum ${p.max_parfums_par_commande} parfum${p.max_parfums_par_commande > 1 ? "s" : ""} par commande.`);
       }
     }
 
@@ -319,9 +362,12 @@ export default function Page() {
         <h2><span className="step">1.</span> Vos produits</h2>
         {produits.length === 0 && <p className="muted">Catalogue en cours de chargement…</p>}
         {produits.map((p) => {
-          const q = quantites[p.id]?.qte ?? 0;
+          const total = qteTotale(p.id);
+          const nbActifs = nbParfumsActifs(p.id);
+          const maxParfums = Math.max(1, p.max_parfums_par_commande);
+          const multiParfums = p.declinaisons.length > 0 && maxParfums >= 2;
           return (
-            <div key={p.id} className="produit-card">
+            <div key={p.id} className="produit-card produit-card-multi">
               {p.photo_url ? (
                 <img src={p.photo_url} alt={p.nom} className="produit-photo" />
               ) : (
@@ -343,21 +389,55 @@ export default function Page() {
                         : `Maximum ${p.qte_max} ${p.categorie === "cornet" ? "cornets" : "pièces"}`}
                   </div>
                 )}
-                {p.declinaisons.length > 0 && (
-                  <select
-                    value={quantites[p.id]?.decli ?? p.declinaisons[0]}
-                    onChange={(e) => setDecli(p, e.target.value)}
-                    style={{ marginTop: 6, maxWidth: 200 }}
-                  >
-                    {p.declinaisons.map((d) => <option key={d}>{d}</option>)}
-                  </select>
+                {multiParfums && (
+                  <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                    Jusqu'à {maxParfums} parfums au choix
+                  </div>
                 )}
-              </div>
-              <div className="qte-control">
-                <button type="button" onClick={() => setQte(p, -1)} disabled={q === 0}>−</button>
-                <span style={{ minWidth: 24, textAlign: "center" }}>{q}</span>
-                <button type="button" onClick={() => setQte(p, +1)}
-                        disabled={p.qte_max != null && q >= p.qte_max}>+</button>
+
+                {p.declinaisons.length === 0 ? (
+                  // Pas de déclinaisons → un seul contrôle ± sur "" (clé vide)
+                  <div className="qte-control" style={{ marginTop: 8 }}>
+                    <button type="button"
+                      onClick={() => setParfumQte(p, "", -1)}
+                      disabled={(quantites[p.id]?.[""] ?? 0) === 0}>−</button>
+                    <span style={{ minWidth: 24, textAlign: "center" }}>
+                      {quantites[p.id]?.[""] ?? 0}
+                    </span>
+                    <button type="button"
+                      onClick={() => setParfumQte(p, "", +1)}
+                      disabled={p.qte_max != null && total >= p.qte_max}>+</button>
+                  </div>
+                ) : (
+                  // Mono ou multi-parfums : une ligne par parfum
+                  <div style={{ marginTop: 8 }}>
+                    {p.declinaisons.map((d) => {
+                      const qte = quantites[p.id]?.[d] ?? 0;
+                      const dejaActif = qte > 0;
+                      const peutAjouter = dejaActif || nbActifs < maxParfums;
+                      return (
+                        <div key={d} className="parfum-row">
+                          <span className="parfum-nom">{d}</span>
+                          <div className="qte-control">
+                            <button type="button"
+                              onClick={() => setParfumQte(p, d, -1)}
+                              disabled={qte === 0}>−</button>
+                            <span style={{ minWidth: 24, textAlign: "center" }}>{qte}</span>
+                            <button type="button"
+                              onClick={() => setParfumQte(p, d, +1)}
+                              disabled={!peutAjouter || (p.qte_max != null && total >= p.qte_max)}>+</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {total > 0 && (
+                      <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+                        Total : <strong>{total}</strong>
+                        {nbActifs > 1 ? ` (${nbActifs} parfums)` : ""}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           );

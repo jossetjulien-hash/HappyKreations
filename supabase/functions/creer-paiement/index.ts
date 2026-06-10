@@ -141,22 +141,38 @@ Deno.serve(async (req) => {
     // 3. Récupérer les prix actuels des produits (jamais faire confiance au client)
     const produitIds = lignes.map((l) => l.produit_id);
     const { data: produits, error: prodErr } = await db.from("produit")
-      .select("id, nom, prix_vente, visible_formulaire, actif, qte_min, qte_max").in("id", produitIds);
+      .select("id, nom, prix_vente, visible_formulaire, actif, qte_min, qte_max, max_parfums_par_commande").in("id", produitIds);
     if (prodErr) throw prodErr;
+    // Mappe chaque ligne au produit
     const lignesValidees = lignes.map((l) => {
       const p = produits?.find((pp) => pp.id === l.produit_id);
       if (!p || !p.visible_formulaire || !p.actif) {
         throw new Error(`produit_indisponible:${l.produit_id}`);
       }
-      const qte = Number(l.quantite);
-      if (p.qte_min != null && qte < Number(p.qte_min)) {
+      return { ...l, prix_unitaire: Number(p.prix_vente), nom: p.nom, produit: p };
+    });
+    // Agrégation par produit pour valider qte_min, qte_max, max_parfums
+    const totauxParProduit = new Map<string, number>();
+    const parfumsParProduit = new Map<string, Set<string>>();
+    for (const l of lignesValidees) {
+      totauxParProduit.set(l.produit_id, (totauxParProduit.get(l.produit_id) ?? 0) + Number(l.quantite));
+      if (!parfumsParProduit.has(l.produit_id)) parfumsParProduit.set(l.produit_id, new Set());
+      parfumsParProduit.get(l.produit_id)!.add(String(l.declinaison ?? ""));
+    }
+    for (const [pid, total] of totauxParProduit) {
+      const p = produits!.find((pp) => pp.id === pid)!;
+      if (p.qte_min != null && total < Number(p.qte_min)) {
         throw new Error(`qte_min:${p.nom}:${p.qte_min}`);
       }
-      if (p.qte_max != null && qte > Number(p.qte_max)) {
+      if (p.qte_max != null && total > Number(p.qte_max)) {
         throw new Error(`qte_max:${p.nom}:${p.qte_max}`);
       }
-      return { ...l, prix_unitaire: Number(p.prix_vente), nom: p.nom };
-    });
+      const maxParfums = Number(p.max_parfums_par_commande ?? 1);
+      const nbParfums = parfumsParProduit.get(pid)?.size ?? 0;
+      if (nbParfums > maxParfums) {
+        throw new Error(`max_parfums:${p.nom}:${maxParfums}`);
+      }
+    }
 
     const totalBrut = lignesValidees.reduce((s, l) => s + l.prix_unitaire * Number(l.quantite), 0);
 
