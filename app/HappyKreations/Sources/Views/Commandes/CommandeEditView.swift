@@ -29,6 +29,8 @@ struct CommandeEditView: View {
     @State private var photoResultatUploading = false
     @State private var generationLien = false
     @State private var lienAPartager: URL?
+    @State private var lienPaiementPret: (url: URL, motif: Repository.MotifPaiement)?
+    @State private var choixCanalPaiement = false
     @State private var nouveauClient: Client?
     @State private var adresseQuery: String = ""
     @State private var adresseSuggestions: [BANAddressService.Suggestion] = []
@@ -92,6 +94,24 @@ struct CommandeEditView: View {
                 ShareSheet(items: [url])
                     .presentationDetents([.medium])
             }
+        }
+        .confirmationDialog("Envoyer le lien de paiement",
+                            isPresented: $choixCanalPaiement, titleVisibility: .visible) {
+            if let email = clientDeLaCommande?.email?.trimmingCharacters(in: .whitespaces),
+               !email.isEmpty {
+                Button("E-mail (\(email))") { envoyerPaiementMail(email: email) }
+            }
+            if let tel = telClientNettoye {
+                Button("SMS (\(clientDeLaCommande?.telephone ?? ""))") { envoyerPaiementSMS(tel: tel) }
+                Button("WhatsApp") { envoyerPaiementWhatsApp(tel: tel) }
+            }
+            Button("Autre application…") {
+                lienAPartager = lienPaiementPret?.url
+            }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            if let nom = clientDeLaCommande?.nom { Text("Envoi à \(nom).") }
+            else { Text("Choisis comment envoyer le lien.") }
         }
         .sheet(item: $nouveauClient) { c in
             NavigationStack {
@@ -743,33 +763,50 @@ struct CommandeEditView: View {
                 errorText = "URL de paiement invalide."
                 return
             }
-            // Si le client a un email → ouvre directement Mail avec un brouillon
-            // pré-rempli (destinataire + corps avec le lien). Sinon on retombe
-            // sur la share sheet (Messages, WhatsApp, copie…).
-            let client = store.client(id: draft.client_id)
-            if let email = client?.email?.trimmingCharacters(in: .whitespaces),
-               !email.isEmpty,
-               ouvrirMailAvecLien(url: url, motif: motif, client: client, email: email) {
-                return
-            }
-            lienAPartager = url
+            // On stocke le lien + motif et on déclenche le confirmationDialog
+            // qui propose à l'utilisateur de choisir le canal d'envoi
+            // (Mail / SMS / WhatsApp / autre).
+            lienPaiementPret = (url, motif)
+            choixCanalPaiement = true
         } catch {
             errorText = "Génération du lien : \(error.localizedDescription)"
         }
     }
 
-    /// Construit un mailto: et l'ouvre dans l'app Mail. Retourne `false` si
-    /// l'ouverture échoue → appelant retombe sur la share sheet.
-    private func ouvrirMailAvecLien(url: URL, motif: Repository.MotifPaiement,
-                                    client: Client?, email: String) -> Bool {
-        let libelle = motif == .acompte ? "acompte" : motif == .solde ? "solde" : "paiement"
-        let prenom = client?.nom.split(separator: " ").first.map(String.init) ?? ""
+    private var clientDeLaCommande: Client? { store.client(id: draft.client_id) }
+
+    private var telClientNettoye: String? {
+        guard let raw = clientDeLaCommande?.telephone?.trimmingCharacters(in: .whitespaces),
+              !raw.isEmpty else { return nil }
+        var digits = raw.filter { $0.isNumber || $0 == "+" }
+        if digits.hasPrefix("+") { digits.removeFirst() }
+        if digits.hasPrefix("0") { digits = "262" + digits.dropFirst() }
+        return digits.isEmpty ? nil : digits
+    }
+
+    private func libelleMotif(_ m: Repository.MotifPaiement) -> String {
+        switch m {
+        case .acompte: return "acompte"
+        case .solde:   return "solde"
+        default:       return "paiement"
+        }
+    }
+
+    private func messagePaiement(motif: Repository.MotifPaiement, url: URL) -> String {
+        let prenom = clientDeLaCommande?.nom.split(separator: " ").first.map(String.init) ?? ""
         let salutation = prenom.isEmpty ? "Bonjour," : "Bonjour \(prenom),"
-        let subject = "Lien de paiement HappyKreations — \(libelle)"
+        return "\(salutation) voici votre lien de paiement sécurisé HappyKreations pour votre \(libelleMotif(motif)) : \(url.absoluteString)"
+    }
+
+    private func envoyerPaiementMail(email: String) {
+        guard let (url, motif) = lienPaiementPret else { return }
+        let prenom = clientDeLaCommande?.nom.split(separator: " ").first.map(String.init) ?? ""
+        let salutation = prenom.isEmpty ? "Bonjour," : "Bonjour \(prenom),"
+        let subject = "Lien de paiement HappyKreations — \(libelleMotif(motif))"
         let body = """
         \(salutation)
 
-        Voici votre lien de paiement sécurisé pour votre \(libelle) :
+        Voici votre lien de paiement sécurisé pour votre \(libelleMotif(motif)) :
         \(url.absoluteString)
 
         À très vite,
@@ -782,13 +819,28 @@ struct CommandeEditView: View {
             URLQueryItem(name: "subject", value: subject),
             URLQueryItem(name: "body", value: body),
         ]
-        guard let mailto = comps.url else { return false }
+        if let u = comps.url { ouvrirURL(u) }
+    }
+
+    private func envoyerPaiementSMS(tel: String) {
+        guard let (url, motif) = lienPaiementPret else { return }
+        let texte = messagePaiement(motif: motif, url: url)
+            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        if let u = URL(string: "sms:\(tel)&body=\(texte)") { ouvrirURL(u) }
+    }
+
+    private func envoyerPaiementWhatsApp(tel: String) {
+        guard let (url, motif) = lienPaiementPret else { return }
+        let texte = messagePaiement(motif: motif, url: url)
+            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        if let u = URL(string: "https://wa.me/\(tel)?text=\(texte)") { ouvrirURL(u) }
+    }
+
+    private func ouvrirURL(_ url: URL) {
         #if os(iOS)
-        guard UIApplication.shared.canOpenURL(mailto) else { return false }
-        UIApplication.shared.open(mailto)
-        return true
+        UIApplication.shared.open(url)
         #else
-        return NSWorkspace.shared.open(mailto)
+        NSWorkspace.shared.open(url)
         #endif
     }
 }
