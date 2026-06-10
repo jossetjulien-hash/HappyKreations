@@ -583,20 +583,19 @@ struct CommandeEditView: View {
             ForEach(evenements) { e in
                 EvenementRow(evenement: e, onDelete: e.type == .memo ? { Task { await supprimerMemo(e) } } : nil)
             }
-            HStack {
-                TextField("Ajouter un mémo (ex. « Mail envoyé pour acompte »)",
-                          text: $nouveauMemo, axis: .vertical)
-                    .lineLimit(1...3)
-                Button {
-                    Task { await ajouterMemo() }
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .foregroundStyle(Color.hkRoseDeep)
-                        .font(.title3)
-                }
-                .buttonStyle(.plain)
-                .disabled(nouveauMemo.trimmingCharacters(in: .whitespaces).isEmpty)
+            TextField("Ajouter un mémo (ex. « Mail envoyé pour acompte »)",
+                      text: $nouveauMemo, axis: .vertical)
+                .lineLimit(1...4)
+                .onSubmit { Task { await ajouterMemo() } }
+            Button {
+                Task { await ajouterMemo() }
+            } label: {
+                Label("Ajouter le mémo", systemImage: "plus.circle.fill")
+                    .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.borderedProminent)
+            .tint(Color.hkRoseDeep)
+            .disabled(nouveauMemo.trimmingCharacters(in: .whitespaces).isEmpty)
         } header: {
             Text("Historique")
         } footer: {
