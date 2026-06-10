@@ -44,8 +44,8 @@ enum BANAddressService {
                     label: f.properties.label,
                     postcode: postcode,
                     city: f.properties.city,
-                    longitude: f.geometry.coordinates[0],
-                    latitude: f.geometry.coordinates[1])
+                    latitude: f.geometry.coordinates[1],
+                    longitude: f.geometry.coordinates[0])
             }
         } catch {
             return []
