@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Produit, CapaciteJour, ConfigItem, LigneCommande, ClientInfo, ZoneLivraison } from "@/lib/types";
+import type { Produit, CapaciteJour, ConfigItem, LigneCommande, ClientInfo, ZoneLivraison, PlageBlocage } from "@/lib/types";
 
 const SUPABASE_FN_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/creer-paiement`;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -14,6 +14,7 @@ export default function Page() {
   const [capacites, setCapacites] = useState<CapaciteJour[]>([]);
   const [config, setConfig] = useState<Record<string, string>>({});
   const [zones, setZones] = useState<ZoneLivraison[]>([]);
+  const [plagesBlocage, setPlagesBlocage] = useState<PlageBlocage[]>([]);
   const [modeRemise, setModeRemise] = useState<"retrait" | "livraison">("retrait");
   const [zoneId, setZoneId] = useState<string | null>(null);
   const [adresseLivraison, setAdresseLivraison] = useState("");
@@ -131,18 +132,30 @@ export default function Page() {
 
   useEffect(() => {
     (async () => {
-      const [{ data: p }, { data: c }, { data: cf }, { data: z }] = await Promise.all([
+      const [{ data: p }, { data: c }, { data: cf }, { data: z }, { data: pb }] = await Promise.all([
         supabase.from("produit").select("*").eq("visible_formulaire", true).eq("actif", true),
         supabase.from("capacite_jour").select("*"),
         supabase.from("config").select("*"),
         supabase.from("zone_livraison").select("*").eq("actif", true).gt("tarif", 0).order("ordre"),
+        supabase.from("plage_blocage").select("*").eq("actif", true).order("date_debut"),
       ]);
       setProduits(p ?? []);
       setCapacites(c ?? []);
       setConfig(Object.fromEntries((cf as ConfigItem[] ?? []).map((x) => [x.cle, x.valeur])));
       setZones((z ?? []) as ZoneLivraison[]);
+      setPlagesBlocage((pb ?? []) as PlageBlocage[]);
     })();
   }, []);
+
+  // Helper : true si la date AAAA-MM-JJ tombe dans une plage active
+  function isDateBloquee(iso: string): boolean {
+    return plagesBlocage.some((p) => iso >= p.date_debut && iso <= p.date_fin);
+  }
+
+  // Plages dont la période recouvre aujourd'hui (pour la bannière)
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+  const plagesEnCours = plagesBlocage.filter(
+    (p) => p.message_client && aujourdhui >= p.date_debut && aujourdhui <= p.date_fin);
 
   const delaiMini = Number(config["delai_mini_jours"] ?? 7);
   const acomptePourcent = Number(config["acompte_pourcent"] ?? 30);
@@ -163,11 +176,11 @@ export default function Page() {
       const j = String(d.getDate()).padStart(2, "0");
       const iso = `${y}-${m}-${j}`;
       const cap = capacites.find((c) => c.date === iso);
-      const ok = !(cap?.bloque ?? false);
+      const ok = !(cap?.bloque ?? false) && !isDateBloquee(iso);
       out.push({ date: iso, jour: d.getDate(), mois: moisFmt.format(d), ok });
     }
     return out;
-  }, [capacites, delaiMini]);
+  }, [capacites, delaiMini, plagesBlocage]);
 
   const lignes: LigneCommande[] = Object.entries(quantites)
     .filter(([, v]) => v.qte > 0)
@@ -292,6 +305,15 @@ export default function Page() {
         <div className="tagline">créations faites main</div>
         <div className="lede">Composez votre commande pour votre événement</div>
       </header>
+
+      {plagesEnCours.length > 0 && (
+        <div className="banniere-conges">
+          <strong>✿ Information</strong>
+          {plagesEnCours.map((p) => (
+            <p key={p.id} style={{ margin: "4px 0 0" }}>{p.message_client}</p>
+          ))}
+        </div>
+      )}
 
       <section className="card">
         <h2><span className="step">1.</span> Vos produits</h2>

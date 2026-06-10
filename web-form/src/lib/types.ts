@@ -21,6 +21,15 @@ export interface ZoneLivraison {
   codes_postaux: string[];
 }
 
+export interface PlageBlocage {
+  id: string;
+  date_debut: string;   // AAAA-MM-JJ
+  date_fin: string;     // AAAA-MM-JJ
+  libelle: string;
+  message_client: string | null;
+  actif: boolean;
+}
+
 export interface CapaciteJour {
   date: string;
   plafond_unites: number | null;

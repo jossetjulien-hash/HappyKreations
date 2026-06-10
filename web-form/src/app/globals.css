@@ -940,3 +940,21 @@ footer-note { display: none; }
 .adresse-suggestions button:hover {
   background: color-mix(in srgb, var(--rose) 18%, transparent);
 }
+
+.banniere-conges {
+  background: color-mix(in srgb, var(--rose) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rose-deep) 35%, transparent);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.banniere-conges strong {
+  display: block;
+  color: var(--rose-deep);
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}

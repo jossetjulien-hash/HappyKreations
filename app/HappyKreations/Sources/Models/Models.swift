@@ -567,6 +567,46 @@ struct Avis: Codable, Identifiable, Hashable {
 
 // MARK: - Code promo
 
+struct PlageBlocage: Codable, Identifiable, Hashable {
+    var id: UUID
+    var date_debut: Date
+    var date_fin: Date
+    var libelle: String
+    var message_client: String?
+    var actif: Bool
+    var created_at: Date?
+
+    static func new() -> PlageBlocage {
+        let today = Calendar.current.startOfDay(for: Date())
+        return PlageBlocage(id: UUID(),
+                            date_debut: today,
+                            date_fin: Calendar.current.date(byAdding: .day, value: 7, to: today) ?? today,
+                            libelle: "", message_client: nil, actif: true)
+    }
+
+    init(id: UUID, date_debut: Date, date_fin: Date, libelle: String,
+         message_client: String?, actif: Bool, created_at: Date? = nil) {
+        self.id = id; self.date_debut = date_debut; self.date_fin = date_fin
+        self.libelle = libelle; self.message_client = message_client
+        self.actif = actif; self.created_at = created_at
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, date_debut, date_fin, libelle, message_client, actif, created_at
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        date_debut = try c.decode(Date.self, forKey: .date_debut)
+        date_fin = try c.decode(Date.self, forKey: .date_fin)
+        libelle = try c.decode(String.self, forKey: .libelle)
+        message_client = try c.decodeIfPresent(String.self, forKey: .message_client)
+        actif = try c.decode(Bool.self, forKey: .actif)
+        created_at = try c.decodeIfPresent(Date.self, forKey: .created_at)
+    }
+}
+
 enum ModeRemise: String, Codable, CaseIterable, Identifiable {
     case retrait
     case livraison

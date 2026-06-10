@@ -248,6 +248,13 @@ struct ReglagesView: View {
                 }
             }
 
+            Section("Disponibilités") {
+                NavigationLink(destination: PlagesBlocageView()) {
+                    Label("Plages bloquées (congés, fermetures)",
+                          systemImage: "calendar.badge.exclamationmark")
+                }
+            }
+
             Section("Projet Supabase") {
                 LabeledContent("URL", value: AppConfig.supabaseURL.absoluteString)
             }

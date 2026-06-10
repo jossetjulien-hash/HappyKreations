@@ -15,7 +15,19 @@
 
 import Stripe from "https://esm.sh/stripe@16?target=denonext";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, handleOptions } from "../_shared/cors.ts";
+
+// Helpers CORS (inlinés pour éviter les soucis de résolution de chemin
+// lors du bundling Edge Function).
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, stripe-signature",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+};
+function handleOptions(req: Request): Response | null {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  return null;
+}
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
   httpClient: Stripe.createFetchHttpClient(),
@@ -74,6 +86,16 @@ Deno.serve(async (req) => {
     ]);
 
     if (capJour?.bloque) return json({ error: "date_bloquee" }, { status: 409 });
+
+    // Vérifier les plages bloquées (congés…)
+    const { data: plageBlocante } = await db.from("plage_blocage")
+      .select("id")
+      .eq("actif", true)
+      .lte("date_debut", date_retrait)
+      .gte("date_fin", date_retrait)
+      .limit(1)
+      .maybeSingle();
+    if (plageBlocante) return json({ error: "date_bloquee" }, { status: 409 });
 
     const delaiMini = Number(configRows?.find((c) => c.cle === "delai_mini_jours")?.valeur ?? 7);
     const acomptePourcent = Number(

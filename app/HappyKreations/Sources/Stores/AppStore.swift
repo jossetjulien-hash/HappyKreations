@@ -21,6 +21,7 @@ final class AppStore: ObservableObject {
     @Published var avis: [Avis] = []
     @Published var temoignages: [Temoignage] = []
     @Published var zonesLivraison: [ZoneLivraison] = []
+    @Published var plagesBlocage: [PlageBlocage] = []
     @Published var config: [String: String] = [:]
 
     @Published var lastError: String?
@@ -66,7 +67,8 @@ final class AppStore: ObservableObject {
         async let cp: () = loadCodesPromo()
         async let av: () = loadAvis()
         async let zl: () = loadZonesLivraison()
-        _ = await (c, p, m, co, pa, f, b, k, cf, t, e, cp, av, zl)
+        async let pb: () = loadPlagesBlocage()
+        _ = await (c, p, m, co, pa, f, b, k, cf, t, e, cp, av, zl, pb)
         // Indexation Spotlight des données fraîchement chargées.
         await SpotlightIndexer.reindex(store: self)
         // Pousse les retraits du jour vers le widget.
@@ -110,6 +112,14 @@ final class AppStore: ObservableObject {
                 ZoneLivraison.self, from: "zone_livraison",
                 orderBy: "ordre")
         } catch { lastError = "zone_livraison: \(error.localizedDescription)" }
+    }
+
+    func loadPlagesBlocage() async {
+        do {
+            plagesBlocage = try await repo.selectAll(
+                PlageBlocage.self, from: "plage_blocage",
+                orderBy: "date_debut")
+        } catch { lastError = "plage_blocage: \(error.localizedDescription)" }
     }
 
     /// Retourne la zone associée à une commande (ou nil si retrait sur place / zone supprimée).
