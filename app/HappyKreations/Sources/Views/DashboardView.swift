@@ -3,7 +3,11 @@ import SwiftUI
 struct DashboardView: View {
     @EnvironmentObject var store: AppStore
     @EnvironmentObject var auth: AuthStore
+    @Binding var selection: AppSection
     @State private var lignesDuMois: [CommandeLigne] = []
+
+    /// Navigue vers l'onglet demandé (utilisé par les tuiles cliquables).
+    private func aller(_ s: AppSection) { selection = s }
 
     var body: some View {
         ScrollView {
@@ -87,7 +91,8 @@ struct DashboardView: View {
             return cal.isDate(d, inSameDayAs: today)
                 && $0.statut != .annulee
         }
-        return SectionCard(titre: "Aujourd'hui", icone: "sun.max.fill", tint: .orange) {
+        return SectionCard(titre: "Aujourd'hui", icone: "sun.max.fill", tint: .orange,
+                           onTitleTap: { aller(.commandes) }) {
             if retraitsAujourdhui.isEmpty {
                 Text("Aucun retrait prévu aujourd'hui.")
                     .foregroundStyle(.secondary)
@@ -95,7 +100,10 @@ struct DashboardView: View {
             } else {
                 VStack(spacing: 8) {
                     ForEach(retraitsAujourdhui) { c in
-                        ligneCommande(c, montrerDate: false)
+                        Button { aller(.commandes) } label: {
+                            ligneCommande(c, montrerDate: false)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -113,23 +121,23 @@ struct DashboardView: View {
         let columns = [GridItem(.adaptive(minimum: 160), spacing: 12)]
         return LazyVGrid(columns: columns, spacing: 12) {
             stat("Commandes à venir", value: "\(commandesAVenir.count)",
-                 icon: "calendar.badge.clock", tint: .blue)
+                 icon: "calendar.badge.clock", tint: .blue, action: { aller(.commandes) })
             stat("Cmd ce mois", value: "\(commandesDuMois.count)",
-                 icon: "doc.text.fill", tint: .purple)
+                 icon: "doc.text.fill", tint: .purple, action: { aller(.commandes) })
             stat("Panier moyen", value: euros(panierMoyenMois),
-                 icon: "cart.fill", tint: .teal)
+                 icon: "cart.fill", tint: .teal, action: { aller(.stats) })
             stat("CA ce mois", value: euros(caMois),
-                 icon: "chart.line.uptrend.xyaxis", tint: .indigo)
+                 icon: "chart.line.uptrend.xyaxis", tint: .indigo, action: { aller(.stats) })
             stat("Encaissé ce mois", value: euros(encaisseMois),
-                 icon: "eurosign.circle", tint: .green)
+                 icon: "eurosign.circle", tint: .green, action: { aller(.stats) })
             stat("Reste dû global", value: euros(resteDuGlobal),
-                 icon: "creditcard", tint: .red)
+                 icon: "creditcard", tint: .red, action: { aller(.commandes) })
             stat("Alertes stock", value: "\(alertesStock)",
-                 icon: "exclamationmark.triangle", tint: .orange)
+                 icon: "exclamationmark.triangle", tint: .orange, action: { aller(.stock) })
             stat("En production", value: "\(enProductionCount)",
-                 icon: "flame.fill", tint: .pink)
+                 icon: "flame.fill", tint: .pink, action: { aller(.commandes) })
             stat("Marge brute (mois)", value: margeMoisLabel,
-                 icon: "percent", tint: .mint)
+                 icon: "percent", tint: .mint, action: { aller(.recettes) })
         }
     }
 
@@ -155,17 +163,21 @@ struct DashboardView: View {
         return coutManquant ? "≈ \(pctTxt) %" : "\(pctTxt) %"
     }
 
-    private func stat(_ title: String, value: String, icon: String, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(title, systemImage: icon)
-                .font(.caption).foregroundStyle(.secondary)
-                .lineLimit(1)
-            Text(value).font(.title3).bold().foregroundStyle(tint)
-                .lineLimit(1).minimumScaleFactor(0.7)
+    private func stat(_ title: String, value: String, icon: String, tint: Color,
+                      action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 6) {
+                Label(title, systemImage: icon)
+                    .font(.caption).foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Text(value).font(.title3).bold().foregroundStyle(tint)
+                    .lineLimit(1).minimumScaleFactor(0.7)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 12).fill(.background.secondary))
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 12).fill(.background.secondary))
+        .buttonStyle(.plain)
     }
 
     // MARK: - Prochains retraits
@@ -182,13 +194,17 @@ struct DashboardView: View {
             .sorted { ($0.date_retrait ?? .distantFuture) < ($1.date_retrait ?? .distantFuture) }
             .prefix(5)
 
-        return SectionCard(titre: "Prochains retraits", icone: "calendar", tint: .blue) {
+        return SectionCard(titre: "Prochains retraits", icone: "calendar", tint: .blue,
+                           onTitleTap: { aller(.agenda) }) {
             if cmds.isEmpty {
                 Text("Rien de programmé.").foregroundStyle(.secondary).font(.subheadline)
             } else {
                 VStack(spacing: 8) {
                     ForEach(Array(cmds)) { c in
-                        ligneCommande(c, montrerDate: true)
+                        Button { aller(.commandes) } label: {
+                            ligneCommande(c, montrerDate: true)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -238,20 +254,24 @@ struct DashboardView: View {
 
     private var topProduitsView: some View {
         let top = topProduitsMois.prefix(3)
-        return SectionCard(titre: "Top produits du mois", icone: "star.fill", tint: .yellow) {
+        return SectionCard(titre: "Top produits du mois", icone: "star.fill", tint: .yellow,
+                           onTitleTap: { aller(.stats) }) {
             if top.isEmpty {
                 Text("Pas encore de ventes ce mois.").foregroundStyle(.secondary).font(.subheadline)
             } else {
                 VStack(spacing: 8) {
                     ForEach(Array(top.enumerated()), id: \.element.id) { idx, t in
-                        HStack(spacing: 12) {
-                            Text("#\(idx + 1)")
-                                .font(.headline).foregroundStyle(.secondary)
-                                .frame(width: 28, alignment: .leading)
-                            Text(t.nom).font(.subheadline)
-                            Spacer()
-                            Text("\(t.quantite) vendus").font(.caption).foregroundStyle(.secondary)
+                        Button { aller(.recettes) } label: {
+                            HStack(spacing: 12) {
+                                Text("#\(idx + 1)")
+                                    .font(.headline).foregroundStyle(.secondary)
+                                    .frame(width: 28, alignment: .leading)
+                                Text(t.nom).font(.subheadline)
+                                Spacer()
+                                Text("\(t.quantite) vendus").font(.caption).foregroundStyle(.secondary)
+                            }
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -280,19 +300,23 @@ struct DashboardView: View {
 
     private var alertesView: some View {
         let alertes = store.matieresDisponibles.filter(\.sous_seuil)
-        return SectionCard(titre: "Alertes stock", icone: "exclamationmark.triangle.fill", tint: .orange) {
+        return SectionCard(titre: "Alertes stock", icone: "exclamationmark.triangle.fill", tint: .orange,
+                           onTitleTap: { aller(.stock) }) {
             if alertes.isEmpty {
                 Text("Tout est en ordre.").foregroundStyle(.secondary).font(.subheadline)
             } else {
                 VStack(spacing: 8) {
                     ForEach(alertes.prefix(5)) { a in
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                            Text(a.nom).font(.subheadline)
-                            Spacer()
-                            Text("\(a.disponible.formatted(.number.precision(.fractionLength(0...2)))) \(a.unite)")
-                                .font(.caption).foregroundStyle(.secondary)
+                        Button { aller(.stock) } label: {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                                Text(a.nom).font(.subheadline)
+                                Spacer()
+                                Text("\(a.disponible.formatted(.number.precision(.fractionLength(0...2)))) \(a.unite)")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -368,14 +392,28 @@ private struct SectionCard<Content: View>: View {
     let titre: String
     let icone: String
     let tint: Color
+    var onTitleTap: (() -> Void)? = nil
     @ViewBuilder var content: () -> Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: icone).foregroundStyle(tint)
-                Text(titre).font(.hkTitle(20, weight: .regular))
+            Button {
+                onTitleTap?()
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: icone).foregroundStyle(tint)
+                    Text(titre).font(.hkTitle(20, weight: .regular))
+                    Spacer()
+                    if onTitleTap != nil {
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .disabled(onTitleTap == nil)
             content()
         }
         .padding(16)

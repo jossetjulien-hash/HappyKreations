@@ -126,7 +126,7 @@ struct RootView: View {
     @ViewBuilder
     private func sectionView(_ section: AppSection) -> some View {
         switch section {
-        case .dashboard:    DashboardView()
+        case .dashboard:    DashboardView(selection: $selection)
         case .commandes:    CommandesListView()
         case .inbox:        InboxView()
         case .agenda:       AgendaView()
