@@ -284,6 +284,7 @@ struct Commande: Codable, Identifiable, Hashable {
     var total: Double
     var acompte: Double
     var notes: String?
+    var remise: Double?
     var allergies: [String]
     var message_gravure: String?
     var couleur: String?
@@ -332,7 +333,7 @@ struct Commande: Codable, Identifiable, Hashable {
 
     enum CodingKeys: String, CodingKey {
         case id, client_id, canal, type_evenement, date_evenement, date_retrait,
-             statut, total, acompte, notes, allergies, message_gravure, couleur,
+             statut, total, acompte, notes, remise, allergies, message_gravure, couleur,
              photo_ref_url, photo_resultat_url, numero_facture, rappel_envoye_at,
              relance_acompte_envoye_at,
              email_confirmation_ouvert_at, email_rappel_ouvert_at, email_relance_ouvert_at,
@@ -353,6 +354,7 @@ struct Commande: Codable, Identifiable, Hashable {
         total = try c.decodeDouble(.total)
         acompte = try c.decodeDouble(.acompte)
         notes = try c.decodeIfPresent(String.self, forKey: .notes)
+        remise = c.decodeDoubleIfPresent(.remise)
         allergies = try c.decodeIfPresent([String].self, forKey: .allergies) ?? []
         message_gravure = try c.decodeIfPresent(String.self, forKey: .message_gravure)
         couleur = try c.decodeIfPresent(String.self, forKey: .couleur)

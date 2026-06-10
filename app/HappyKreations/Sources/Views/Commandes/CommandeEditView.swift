@@ -421,6 +421,20 @@ struct CommandeEditView: View {
             HStack { Text("Sous-total produits"); Spacer()
                 Text(totalProduits, format: .currency(code: "EUR")).foregroundStyle(.secondary)
             }
+            HStack {
+                Text("Remise")
+                Spacer()
+                TextField("0", value: Binding(
+                    get: { draft.remise ?? 0 },
+                    set: { draft.remise = $0 > 0 ? $0 : nil }),
+                          format: .number)
+                    .multilineTextAlignment(.trailing)
+                    #if os(iOS)
+                    .keyboardType(.decimalPad)
+                    #endif
+                    .frame(width: 90)
+                Text("€")
+            }
             if draft.frais_livraison > 0 {
                 HStack { Text("Frais de livraison"); Spacer()
                     Text(draft.frais_livraison, format: .currency(code: "EUR")).foregroundStyle(.secondary)
@@ -581,7 +595,7 @@ struct CommandeEditView: View {
         lignes.reduce(0) { $0 + Double($1.quantite) * $1.prix_unitaire }
     }
     private var totalCalcule: Double {
-        totalProduits + draft.frais_livraison
+        max(0, totalProduits - (draft.remise ?? 0)) + draft.frais_livraison
     }
     private var acompte: Double {
         totalCalcule * store.acomptePourcent / 100
@@ -1059,7 +1073,16 @@ private struct LigneRow: View {
                 if let p = store.produit(id: new) { ligne.prix_unitaire = p.prix_vente }
             }
             HStack {
-                Stepper("Quantité : \(ligne.quantite)", value: $ligne.quantite, in: 1...999)
+                Text("Quantité")
+                Spacer()
+                TextField("", value: $ligne.quantite, format: .number)
+                    .multilineTextAlignment(.trailing)
+                    #if os(iOS)
+                    .keyboardType(.numberPad)
+                    #endif
+                    .frame(width: 80)
+                Stepper("", value: $ligne.quantite, in: 1...9999)
+                    .labelsHidden()
             }
             HStack {
                 Text("Prix unit.")
