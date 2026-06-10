@@ -801,10 +801,10 @@ struct ShareSheet: View {
         #if os(iOS)
         UIShareSheetWrapper(items: items)
         #else
-        // macOS : copie dans le presse-papiers
+        // macOS : copie dans le presse-papiers (premier URL trouvé dans items)
         VStack(spacing: 16) {
-            Text("Lien de paiement").font(.headline)
-            if let url = items.first as? URL {
+            Text("Lien à partager").font(.headline)
+            if let url = items.compactMap({ $0 as? URL }).first {
                 Text(url.absoluteString)
                     .font(.system(.caption, design: .monospaced))
                     .textSelection(.enabled)

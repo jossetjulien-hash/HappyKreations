@@ -8,4 +8,7 @@ enum AppConfig {
     static let supabaseAnonKey = "sb_publishable_7WXTocSV71ukvradI-sSPg_I90fy09u"
 
     static let appName = "HappyKreations"
+
+    /// URL publique du formulaire de commande client (page web).
+    static let formulaireURL = URL(string: "https://commande.happykreations.fr/commander")!
 }

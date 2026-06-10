@@ -29,6 +29,8 @@ struct ReglagesView: View {
     @State private var anneeExport: Int = Calendar.current.component(.year, from: Date())
     @AppStorage(LocalNotificationService.enabledKey) private var notificationsEnabled = true
     @State private var notifAuthStatus: UNAuthorizationStatus = .notDetermined
+    @State private var partageFormulaire = false
+    @State private var lienCopie = false
 
     var body: some View {
         Form {
@@ -217,6 +219,29 @@ struct ReglagesView: View {
                 } label: { Label("Toutes les commandes (CSV)", systemImage: "square.and.arrow.up") }
             }
 
+            Section {
+                Button {
+                    partageFormulaire = true
+                } label: {
+                    Label("Partager le formulaire de commande", systemImage: "square.and.arrow.up")
+                }
+                Button {
+                    #if os(iOS)
+                    UIPasteboard.general.string = AppConfig.formulaireURL.absoluteString
+                    #else
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(AppConfig.formulaireURL.absoluteString, forType: .string)
+                    #endif
+                    lienCopie = true
+                } label: {
+                    Label(lienCopie ? "Lien copié ✓" : "Copier le lien", systemImage: "doc.on.doc")
+                }
+            } header: {
+                Text("Formulaire client")
+            } footer: {
+                Text("Partage ce lien à tes clients (Instagram, WhatsApp, SMS…) pour qu'ils passent commande et règlent l'acompte en ligne.\n\(AppConfig.formulaireURL.absoluteString)")
+            }
+
             Section("Livraison") {
                 NavigationLink(destination: ZonesLivraisonView()) {
                     Label("Zones et tarifs de livraison", systemImage: "shippingbox")
@@ -236,6 +261,13 @@ struct ReglagesView: View {
             notifAuthStatus = await LocalNotificationService.shared.currentStatus()
         }
         .onChange(of: store.config) { _, _ in restaurer() }
+        .sheet(isPresented: $partageFormulaire) {
+            ShareSheet(items: [
+                "Passez votre commande HappyKreations ici 🍫 :",
+                AppConfig.formulaireURL,
+            ])
+            .presentationDetents([.medium])
+        }
         .alert("Erreur", isPresented: .init(get: { errorText != nil }, set: { _ in errorText = nil })) {
             Button("OK", role: .cancel) {}
         } message: { Text(errorText ?? "") }
