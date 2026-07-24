@@ -53,10 +53,10 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.happykreations.app
-        # Team de signature, alimenté par scripts/dev-setup.sh à partir du
-        # trousseau (Apple ID josset.julien@icloud.com). Vide → on retombe sur
-        # le réglage manuel dans Xcode.
-        DEVELOPMENT_TEAM: ${DEVELOPMENT_TEAM}
+        # Team de signature Apple Developer (compte josset.julien@icloud.com).
+        # Le script dev-setup.sh peut surcharger via ${DEVELOPMENT_TEAM} depuis
+        # le trousseau ; sinon on utilise cette valeur par défaut.
+        DEVELOPMENT_TEAM: YJ8T34YFZZ
         CODE_SIGN_STYLE: Automatic
         ENABLE_PREVIEWS: YES
         SWIFT_VERSION: "5.10"
