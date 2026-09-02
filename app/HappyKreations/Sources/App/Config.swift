@@ -10,5 +10,5 @@ enum AppConfig {
     static let appName = "HappyKreations"
 
     /// URL publique du formulaire de commande client (page web).
-    static let formulaireURL = URL(string: "https://commande.happykreations.fr/commander")!
+    static let formulaireURL = URL(string: "https://happykreations.vercel.app/commander")!
 }

@@ -370,7 +370,7 @@ export interface AvisEmailData {
   clientEmail: string;
   nomAtelier: string;
   commandeId: string;       // UUID — sert de capability token dans l'URL
-  baseUrl: string;          // ex. https://commande.happykreations.fr
+  baseUrl: string;          // ex. https://happykreations.vercel.app
 }
 
 export function renderDemandeAvis(d: AvisEmailData): string {

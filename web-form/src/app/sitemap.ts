@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const BASE = "https://commande.happykreations.fr";
+const BASE = "https://happykreations.vercel.app";
 
 /// Sitemap statique — 4 routes publiques. La page de remerciement n'est
 /// pas indexée (param querystring + contenu post-paiement).

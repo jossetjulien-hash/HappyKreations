@@ -112,7 +112,7 @@ async function envoyerRelance(commande: any, client: any, baseUrl: string)
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const baseUrl = Deno.env.get("PUBLIC_SITE_URL") ?? "https://commande.happykreations.fr";
+  const baseUrl = Deno.env.get("PUBLIC_SITE_URL") ?? "https://happykreations.vercel.app";
 
   try {
     let body: any = {};

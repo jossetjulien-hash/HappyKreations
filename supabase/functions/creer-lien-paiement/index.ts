@@ -92,6 +92,7 @@ Deno.serve(async (req) => {
     const { data: configRows } = await db.from("config")
       .select("cle, valeur").eq("cle", "nom_atelier");
     const nomAtelier = configRows?.[0]?.valeur ?? "HappyKreations";
+    const baseUrl = Deno.env.get("PUBLIC_SITE_URL") ?? "https://happykreations.vercel.app";
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -111,11 +112,11 @@ Deno.serve(async (req) => {
         commande_id,
         kind: libelle.toLowerCase(),
       },
-      // L'URL de retour pointe sur la page web /merci (web-form Vercel) avec
-      // l'id de la commande. Si pas encore déployé, le client verra une 404
-      // mais le paiement aura été enregistré côté Stripe + webhook.
-      success_url: `https://commande.happykreations.fr/merci?id=${commande_id}`,
-      cancel_url: `https://commande.happykreations.fr/?annule=1`,
+      // URL de retour vers la page /merci du site. Configurable via le secret
+      // PUBLIC_SITE_URL pour pouvoir basculer sur un domaine perso sans
+      // redéployer la fonction.
+      success_url: `${baseUrl}/merci?id=${commande_id}`,
+      cancel_url: `${baseUrl}/?annule=1`,
     });
 
     return json({

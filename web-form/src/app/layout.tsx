@@ -22,7 +22,7 @@ const nunito = Nunito_Sans({
   display: "swap",
 });
 
-const SITE_URL = "https://commande.happykreations.fr";
+const SITE_URL = "https://happykreations.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

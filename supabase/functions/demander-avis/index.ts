@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     const { data: configRows } = await db.from("config")
       .select("cle, valeur").in("cle", ["nom_atelier"]);
     const nomAtelier = configRows?.[0]?.valeur || "HappyKreations";
-    const baseUrl = Deno.env.get("PUBLIC_SITE_URL") ?? "https://commande.happykreations.fr";
+    const baseUrl = Deno.env.get("PUBLIC_SITE_URL") ?? "https://happykreations.vercel.app";
 
     for (const c of liste) {
       const client = c.client as { nom?: string; email?: string } | null;
