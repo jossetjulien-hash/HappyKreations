@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import type { Produit } from "@/lib/types";
+import type { Produit, CategorieProduit } from "@/lib/types";
 
 // SSR pour avoir une vraie page rapide + SEO. Revalidation toutes les 5 min,
 // largement suffisant pour un catalogue artisanal.
@@ -22,6 +22,15 @@ interface Temoignage {
   texte: string;
   evenement: string | null;
   ordre: number;
+}
+
+async function getCategories(): Promise<CategorieProduit[]> {
+  const { data } = await supabase
+    .from("categorie_produit")
+    .select("*")
+    .eq("actif", true)
+    .order("ordre");
+  return (data as CategorieProduit[] | null) ?? [];
 }
 
 async function getTemoignages(): Promise<Temoignage[]> {
@@ -51,6 +60,7 @@ async function getInspirations(): Promise<Inspiration[]> {
 
 export default async function HomePage() {
   const produits = await getProduits();
+  const categories = await getCategories();
   const temoignages = await getTemoignages();
   const inspirations = await getInspirations();
   const produitsAvecPhoto = produits.filter((p) => p.photo_url);
@@ -92,23 +102,26 @@ export default async function HomePage() {
           <h2><span className="step">✿</span> Le catalogue</h2>
           <p className="muted">Quelques-unes de mes créations — tout est sur mesure.</p>
           <div className="gallery-grid">
-            {galerie.slice(0, 8).map((p) => (
-              <article key={p.id} className="produit-tile">
-                {p.photo_url ? (
-                  <img src={p.photo_url} alt={p.nom} />
-                ) : (
-                  <div className="produit-tile-placeholder">
-                    {p.categorie === "coffret" ? "🍫" : "🌀"}
+            {galerie.slice(0, 8).map((p) => {
+              const cat = categories.find((c) => c.id === p.categorie_id);
+              return (
+                <article key={p.id} className="produit-tile">
+                  {p.photo_url ? (
+                    <img src={p.photo_url} alt={p.nom} />
+                  ) : (
+                    <div className="produit-tile-placeholder">
+                      {cat?.emoji ?? "✿"}
+                    </div>
+                  )}
+                  <div className="produit-tile-info">
+                    <strong>{p.nom}</strong>
+                    <span>
+                      {p.prix_vente.toFixed(2)} €{cat ? ` · ${cat.nom}` : ""}
+                    </span>
                   </div>
-                )}
-                <div className="produit-tile-info">
-                  <strong>{p.nom}</strong>
-                  <span>
-                    {p.prix_vente.toFixed(2)} € · {p.categorie}
-                  </span>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         </section>
       )}

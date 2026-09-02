@@ -1,7 +1,18 @@
+export interface CategorieProduit {
+  id: string;
+  nom: string;
+  emoji: string | null;
+  icone: string;
+  /** Unité affichée dans les messages de quantité (pièces, cornets…). */
+  unite: string;
+  ordre: number;
+  actif: boolean;
+}
+
 export interface Produit {
   id: string;
   nom: string;
-  categorie: "coffret" | "cornet";
+  categorie_id: string | null;
   prix_vente: number;
   declinaisons: string[];
   visible_formulaire: boolean;

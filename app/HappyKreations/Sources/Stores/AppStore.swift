@@ -22,6 +22,7 @@ final class AppStore: ObservableObject {
     @Published var temoignages: [Temoignage] = []
     @Published var zonesLivraison: [ZoneLivraison] = []
     @Published var plagesBlocage: [PlageBlocage] = []
+    @Published var categoriesProduit: [CategorieProduit] = []
     @Published var config: [String: String] = [:]
 
     @Published var lastError: String?
@@ -68,7 +69,8 @@ final class AppStore: ObservableObject {
         async let av: () = loadAvis()
         async let zl: () = loadZonesLivraison()
         async let pb: () = loadPlagesBlocage()
-        _ = await (c, p, m, co, pa, f, b, k, cf, t, e, cp, av, zl, pb)
+        async let ca: () = loadCategoriesProduit()
+        _ = await (c, p, m, co, pa, f, b, k, cf, t, e, cp, av, zl, pb, ca)
         // Indexation Spotlight des données fraîchement chargées.
         await SpotlightIndexer.reindex(store: self)
         // Pousse les retraits du jour vers le widget.
@@ -120,6 +122,20 @@ final class AppStore: ObservableObject {
                 PlageBlocage.self, from: "plage_blocage",
                 orderBy: "date_debut")
         } catch { lastError = "plage_blocage: \(error.localizedDescription)" }
+    }
+
+    func loadCategoriesProduit() async {
+        do {
+            categoriesProduit = try await repo.selectAll(
+                CategorieProduit.self, from: "categorie_produit",
+                orderBy: "ordre")
+        } catch { lastError = "categorie_produit: \(error.localizedDescription)" }
+    }
+
+    /// Catégorie d'un produit (nil si non renseignée ou supprimée).
+    func categorieProduit(id: UUID?) -> CategorieProduit? {
+        guard let id else { return nil }
+        return categoriesProduit.first { $0.id == id }
     }
 
     /// Retourne la zone associée à une commande (ou nil si retrait sur place / zone supprimée).

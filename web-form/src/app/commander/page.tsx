@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Produit, CapaciteJour, ConfigItem, LigneCommande, ClientInfo, ZoneLivraison, PlageBlocage } from "@/lib/types";
+import type { Produit, CapaciteJour, ConfigItem, LigneCommande, ClientInfo, ZoneLivraison, PlageBlocage, CategorieProduit } from "@/lib/types";
 
 const SUPABASE_FN_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/creer-paiement`;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -15,6 +15,7 @@ export default function Page() {
   const [config, setConfig] = useState<Record<string, string>>({});
   const [zones, setZones] = useState<ZoneLivraison[]>([]);
   const [plagesBlocage, setPlagesBlocage] = useState<PlageBlocage[]>([]);
+  const [categories, setCategories] = useState<CategorieProduit[]>([]);
   const [modeRemise, setModeRemise] = useState<"retrait" | "livraison">("retrait");
   const [zoneId, setZoneId] = useState<string | null>(null);
   const [adresseLivraison, setAdresseLivraison] = useState("");
@@ -135,18 +136,20 @@ export default function Page() {
 
   useEffect(() => {
     (async () => {
-      const [{ data: p }, { data: c }, { data: cf }, { data: z }, { data: pb }] = await Promise.all([
+      const [{ data: p }, { data: c }, { data: cf }, { data: z }, { data: pb }, { data: cat }] = await Promise.all([
         supabase.from("produit").select("*").eq("visible_formulaire", true).eq("actif", true),
         supabase.from("capacite_jour").select("*"),
         supabase.from("config").select("*"),
         supabase.from("zone_livraison").select("*").eq("actif", true).gt("tarif", 0).order("ordre"),
         supabase.from("plage_blocage").select("*").eq("actif", true).order("date_debut"),
+        supabase.from("categorie_produit").select("*").eq("actif", true).order("ordre"),
       ]);
       setProduits(p ?? []);
       setCapacites(c ?? []);
       setConfig(Object.fromEntries((cf as ConfigItem[] ?? []).map((x) => [x.cle, x.valeur])));
       setZones((z ?? []) as ZoneLivraison[]);
       setPlagesBlocage((pb ?? []) as PlageBlocage[]);
+      setCategories((cat ?? []) as CategorieProduit[]);
     })();
   }, []);
 
@@ -274,7 +277,7 @@ export default function Page() {
     for (const [pid, total] of totauxParProduit) {
       const p = produits.find((pp) => pp.id === pid);
       if (!p) continue;
-      const unite = p.categorie === "cornet" ? "cornets" : "pièces";
+      const unite = categories.find((c) => c.id === p.categorie_id)?.unite ?? "pièces";
       if (p.qte_min != null && total < p.qte_min) {
         return setError(`${p.nom} : minimum ${p.qte_min} ${unite}.`);
       }
@@ -366,27 +369,29 @@ export default function Page() {
           const nbActifs = nbParfumsActifs(p.id);
           const maxParfums = Math.max(1, p.max_parfums_par_commande);
           const multiParfums = p.declinaisons.length > 0 && maxParfums >= 2;
+          const cat = categories.find((c) => c.id === p.categorie_id);
+          const unite = cat?.unite ?? "pièces";
           return (
             <div key={p.id} className="produit-card produit-card-multi">
               {p.photo_url ? (
                 <img src={p.photo_url} alt={p.nom} className="produit-photo" />
               ) : (
                 <div className="produit-photo placeholder" aria-hidden="true">
-                  {p.categorie === "coffret" ? "🍫" : "🌀"}
+                  {cat?.emoji ?? "✿"}
                 </div>
               )}
               <div className="produit-infos">
                 <strong>{p.nom}</strong>
                 <div className="muted">
-                  {p.prix_vente.toFixed(2)} € · {p.categorie}
+                  {p.prix_vente.toFixed(2)} €{cat ? ` · ${cat.nom}` : ""}
                 </div>
                 {(p.qte_min != null || p.qte_max != null) && (
                   <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
                     {p.qte_min != null && p.qte_max != null
-                      ? `Commande de ${p.qte_min} à ${p.qte_max} ${p.categorie === "cornet" ? "cornets" : "pièces"}`
+                      ? `Commande de ${p.qte_min} à ${p.qte_max} ${unite}`
                       : p.qte_min != null
-                        ? `Minimum ${p.qte_min} ${p.categorie === "cornet" ? "cornets" : "pièces"}`
-                        : `Maximum ${p.qte_max} ${p.categorie === "cornet" ? "cornets" : "pièces"}`}
+                        ? `Minimum ${p.qte_min} ${unite}`
+                        : `Maximum ${p.qte_max} ${unite}`}
                   </div>
                 )}
                 {multiParfums && (

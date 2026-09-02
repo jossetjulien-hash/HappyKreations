@@ -1,10 +1,8 @@
 import Foundation
 
-enum CategorieProduit: String, Codable, CaseIterable, Identifiable {
-    case coffret, cornet
-    var id: String { rawValue }
-    var libelle: String { self == .coffret ? "Coffret" : "Cornet" }
-}
+// NB : `CategorieProduit` n'est plus un enum figé — c'est désormais un struct
+// dans Models.swift adossé à la table `categorie_produit`, éditable depuis
+// Réglages → Catégories de produits.
 
 enum CanalCommande: String, Codable, CaseIterable, Identifiable {
     case formulaire, messenger, email, manuel

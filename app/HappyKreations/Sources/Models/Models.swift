@@ -54,10 +54,54 @@ struct Client: Codable, Identifiable, Hashable {
 
 // MARK: - Produit
 
+/// Catégorie de produit, configurable depuis l'app (table `categorie_produit`).
+/// Remplace l'ancien enum figé : l'artisan gère sa propre liste.
+struct CategorieProduit: Codable, Identifiable, Hashable {
+    var id: UUID
+    var nom: String
+    var emoji: String?
+    var icone: String
+    /// Unité affichée dans les messages de quantité (« pièces », « cornets »…).
+    var unite: String
+    var ordre: Int
+    var actif: Bool
+    var created_at: Date?
+
+    static func new() -> CategorieProduit {
+        CategorieProduit(id: UUID(), nom: "", emoji: nil,
+                         icone: "shippingbox", unite: "pièces",
+                         ordre: 0, actif: true)
+    }
+
+    init(id: UUID, nom: String, emoji: String?, icone: String, unite: String,
+         ordre: Int, actif: Bool, created_at: Date? = nil) {
+        self.id = id; self.nom = nom; self.emoji = emoji
+        self.icone = icone; self.unite = unite
+        self.ordre = ordre; self.actif = actif
+        self.created_at = created_at
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, nom, emoji, icone, unite, ordre, actif, created_at
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        nom = try c.decode(String.self, forKey: .nom)
+        emoji = try c.decodeIfPresent(String.self, forKey: .emoji)
+        icone = try c.decodeIfPresent(String.self, forKey: .icone) ?? "shippingbox"
+        unite = try c.decodeIfPresent(String.self, forKey: .unite) ?? "pièces"
+        ordre = try c.decodeIfPresent(Int.self, forKey: .ordre) ?? 0
+        actif = try c.decode(Bool.self, forKey: .actif)
+        created_at = try c.decodeIfPresent(Date.self, forKey: .created_at)
+    }
+}
+
 struct Produit: Codable, Identifiable, Hashable {
     var id: UUID
     var nom: String
-    var categorie: CategorieProduit
+    var categorie_id: UUID?
     var prix_vente: Double
     var declinaisons: [String]
     var visible_formulaire: Bool
@@ -69,16 +113,16 @@ struct Produit: Codable, Identifiable, Hashable {
     var created_at: Date?
 
     static func new() -> Produit {
-        Produit(id: UUID(), nom: "", categorie: .coffret, prix_vente: 0,
+        Produit(id: UUID(), nom: "", categorie_id: nil, prix_vente: 0,
                 declinaisons: [], visible_formulaire: false, actif: true,
                 photo_url: nil)
     }
 
-    init(id: UUID, nom: String, categorie: CategorieProduit, prix_vente: Double,
+    init(id: UUID, nom: String, categorie_id: UUID?, prix_vente: Double,
          declinaisons: [String], visible_formulaire: Bool, actif: Bool,
          photo_url: String? = nil, qte_min: Int? = nil, qte_max: Int? = nil,
          max_parfums_par_commande: Int = 1, created_at: Date? = nil) {
-        self.id = id; self.nom = nom; self.categorie = categorie
+        self.id = id; self.nom = nom; self.categorie_id = categorie_id
         self.prix_vente = prix_vente; self.declinaisons = declinaisons
         self.visible_formulaire = visible_formulaire; self.actif = actif
         self.photo_url = photo_url
@@ -88,7 +132,7 @@ struct Produit: Codable, Identifiable, Hashable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, nom, categorie, prix_vente, declinaisons, visible_formulaire,
+        case id, nom, categorie_id, prix_vente, declinaisons, visible_formulaire,
              actif, photo_url, qte_min, qte_max, max_parfums_par_commande, created_at
     }
 
@@ -96,7 +140,7 @@ struct Produit: Codable, Identifiable, Hashable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(UUID.self, forKey: .id)
         nom = try c.decode(String.self, forKey: .nom)
-        categorie = try c.decode(CategorieProduit.self, forKey: .categorie)
+        categorie_id = try c.decodeIfPresent(UUID.self, forKey: .categorie_id)
         prix_vente = try c.decodeDouble(.prix_vente)
         declinaisons = try c.decodeIfPresent([String].self, forKey: .declinaisons) ?? []
         visible_formulaire = try c.decode(Bool.self, forKey: .visible_formulaire)

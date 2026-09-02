@@ -10,11 +10,12 @@ struct RecettesListView: View {
             ForEach(store.produits) { p in
                 NavigationLink(destination: RecetteEditView(produitId: p.id)) {
                     HStack {
-                        ProduitThumb(url: p.photo_url, categorie: p.categorie)
+                        ProduitThumb(url: p.photo_url,
+                                     categorie: store.categorieProduit(id: p.categorie_id))
                         VStack(alignment: .leading) {
                             Text(p.nom.isEmpty ? "(Produit sans nom)" : p.nom).font(.headline)
                             HStack(spacing: 6) {
-                                Text(p.categorie.libelle)
+                                Text(store.categorieProduit(id: p.categorie_id)?.nom ?? "Sans catégorie")
                                 Text("·")
                                 Text(p.prix_vente, format: .currency(code: "EUR"))
                             }
@@ -66,7 +67,9 @@ struct RecetteEditView: View {
         Form {
             Section("Photo") {
                 HStack(spacing: 12) {
-                    ProduitThumb(url: draft.photo_url, categorie: draft.categorie, size: 80)
+                    ProduitThumb(url: draft.photo_url,
+                                 categorie: store.categorieProduit(id: draft.categorie_id),
+                                 size: 80)
                     VStack(alignment: .leading, spacing: 6) {
                         PhotosPicker(selection: $photoItem, matching: .images, photoLibrary: .shared()) {
                             Label(draft.photo_url == nil ? "Ajouter une photo" : "Remplacer",
@@ -92,8 +95,12 @@ struct RecetteEditView: View {
             }
             Section("Produit") {
                 TextField("Nom", text: $draft.nom)
-                Picker("Catégorie", selection: $draft.categorie) {
-                    ForEach(CategorieProduit.allCases) { Text($0.libelle).tag($0) }
+                Picker("Catégorie", selection: $draft.categorie_id) {
+                    Text("— Aucune —").tag(UUID?.none)
+                    ForEach(store.categoriesProduit.filter(\.actif)) { c in
+                        Text("\(c.emoji ?? "") \(c.nom)".trimmingCharacters(in: .whitespaces))
+                            .tag(Optional(c.id))
+                    }
                 }
                 HStack {
                     Text("Prix de vente")
@@ -303,7 +310,8 @@ struct RecetteEditView: View {
 
 struct ProduitThumb: View {
     let url: String?
-    let categorie: CategorieProduit
+    /// Catégorie du produit — sert d'icône de repli quand il n'y a pas de photo.
+    let categorie: CategorieProduit?
     var size: CGFloat = 44
 
     var body: some View {
@@ -332,7 +340,7 @@ struct ProduitThumb: View {
     private var placeholder: some View {
         ZStack {
             Color.secondary.opacity(0.08)
-            Image(systemName: categorie == .coffret ? "shippingbox" : "cone")
+            Image(systemName: categorie?.icone ?? "shippingbox")
                 .foregroundStyle(.tint)
         }
     }

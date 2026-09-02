@@ -244,6 +244,12 @@ struct ReglagesView: View {
                 Text("Partage ce lien à tes clients (Instagram, WhatsApp, SMS…) pour qu'ils passent commande et règlent l'acompte en ligne.\n\(AppConfig.formulaireURL.absoluteString)")
             }
 
+            Section("Catalogue") {
+                NavigationLink(destination: CategoriesProduitView()) {
+                    Label("Catégories de produits", systemImage: "square.grid.2x2")
+                }
+            }
+
             Section("Livraison") {
                 NavigationLink(destination: ZonesLivraisonView()) {
                     Label("Zones et tarifs de livraison", systemImage: "shippingbox")
