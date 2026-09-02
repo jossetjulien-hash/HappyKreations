@@ -36,3 +36,8 @@ supabase/.temp/
 # Editor
 .idea/
 .vscode/
+
+# Les Info.plist sont générés par xcodegen depuis project.yml (bloc `info:`).
+# Les suivre ferait échouer chaque `git pull` après un dev-setup.sh.
+app/HappyKreations/Info.plist
+app/HappyKreationsWidget/Info.plist
